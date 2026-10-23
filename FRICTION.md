@@ -97,14 +97,14 @@ Machine and date: Linux, Node 22, 23 Oct 2026 (IST).
 - **Workaround:** `scripts/deploy-pages.sh` publishes `public/` to `gh-pages`; the CI workflow is kept at `ci/ci.yml` with `scripts/enable-ci.sh` to install it after `gh auth refresh -s workflow`.
 - **Suggestion:** have `gh auth login` mention the `workflow` scope when the user picks "repo" scopes.
 
-### 11. No AWS credentials or credits, so the Bedrock path is untested (Observed/Reported, Medium, AWS)
-- **Task:** use Amazon Bedrock (Nova Lite, Converse API) as an optional frame detector.
-- **Steps:** implemented `lib/bedrock.js`, installed `@aws-sdk/client-bedrock-runtime`, called it with `DZ_BEDROCK=1` and placeholder keys.
-- **Expected:** a way to get hackathon credits or a Bedrock sandbox to test with.
-- **Actual:** the credit form closed on 7 Oct; with placeholder keys the call fails with `UnrecognizedClientException` (so it reaches AWS correctly). New accounts reportedly start with 0 Bedrock quota (forum 45416/45474).
-- **Severity:** Medium. The AWS path can't be verified, so we don't claim it works.
-- **Workaround:** Bedrock is optional and off by default; detection runs in the browser with vendored TF.js.
-- **Suggestion:** a free Bedrock sandbox quota for registered hackathon entrants.
+### 11. New AWS account: Bedrock blocked during account verification; credits closed (Observed, Medium, AWS)
+- **Task:** use Amazon Bedrock (Nova Lite, Converse API) as an optional frame detector, next to Amazon Rekognition.
+- **Steps:** implemented `lib/bedrock.js`; signed in with `aws login` (default profile, us-east-1); called Converse with a JPEG at 22:56 IST on 23 Oct 2026. Rekognition `DetectLabels` on the same account worked first time.
+- **Expected:** Bedrock usable like Rekognition, or a clear in-console message about how long verification takes.
+- **Actual:** the CLI first reported "account is being verified (normally < 2 hours)". Our SDK call then returned `ValidationException: Operation not allowed`, an error that doesn't say verification is the cause. The hackathon credit form had closed on 7 Oct, and the forum reports new accounts with 0 Bedrock quota (45416/45474).
+- **Severity:** Medium. The Bedrock path can't be verified before the deadline, so we don't claim it.
+- **Workaround:** ship Amazon Rekognition as the AWS runtime path (`lib/rekognition.js`, verified). Bedrock stays optional and off by default.
+- **Suggestion:** return an explicit `AccountVerificationPending` error code from Bedrock while verification is pending, and give hackathon entrants a Bedrock sandbox quota.
 
 ### 12. A partner PWA can't call Ring from the browser, and account linking can't be tried without partner credentials (Docs, Medium)
 - **Task:** build the homeowner app as an installable PWA with a real "Connect Ring" step.

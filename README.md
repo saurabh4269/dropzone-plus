@@ -15,6 +15,7 @@ Ring sees the zone, Alexa tells the household (simulated Alexa+ add-on), a smart
 | 🧾 **Friction log** | [FRICTION.md](FRICTION.md) |
 | 🧰 **Open-source companion** (Ring Partner API mock + signed webhook simulator) | https://github.com/saurabh4269/ring-partner-sandbox |
 | 🔌 **Where we call the Ring API** | [table below](#how-the-ring-api-is-used) |
+| ☁️ **AWS runtime path** (Amazon Rekognition) | [AWS section](#aws-amazon-rekognition-runtime-opt-in) |
 
 Built for the Amazon Developer Hackathon 2026, **Ring track** ("Ring meets Alexa and other connected devices").
 
@@ -117,7 +118,8 @@ The Playground can't send webhooks, so [`scripts/simulate-events.js`](scripts/si
 | Replay yard, actors and their "detections" | **Simulated**: a drawn scene with **scripted** boxes, labelled "SIMULATED FEED · REPLAY" and "(scripted)" on screen |
 | Alexa | **Simulated Alexa+ add-on**: utterances and consent prompts, spoken with browser TTS. Also exposed as an **MCP server** ([`mcp/dropzone-mcp.js`](mcp/dropzone-mcp.js)), the interface Alexa+ add-ons use. There is no public Alexa+ access for this hackathon |
 | Smart pet door | **Simulated** adapter (modelled on Alexa-compatible doors such as Wayzn/Pawport) |
-| Amazon Bedrock (Nova) frame description | **Optional**, off by default; exercised up to AWS auth, not yet run with real credentials ([`lib/bedrock.js`](lib/bedrock.js)) |
+| Amazon Rekognition DetectLabels on Ring frames | **Real, verified on 23 Oct 2026**, opt-in with `DZ_AWS=1` ([`lib/rekognition.js`](lib/rekognition.js)) |
+| Amazon Bedrock (Nova) frame description | **Optional, not working yet**: the account returns `Operation not allowed` ([`lib/bedrock.js`](lib/bedrock.js)) |
 
 Nothing here is affiliated with, endorsed by, or connected to any drone operator.
 
@@ -183,6 +185,31 @@ After the drop, the **real** `findNewObject` runs on rendered 160×90 Ring frame
 | Authority | Authoritative | Veto-only (HOLD or nothing) |
 
 Full comparison and sources: [docs/COMPARISON.md](docs/COMPARISON.md).
+
+## AWS: Amazon Rekognition (runtime, opt-in)
+
+The default detector runs in the browser with no account (vendored COCO-SSD). With an AWS account, DropZone+ can instead send each Ring frame to **Amazon Rekognition DetectLabels** on the server:
+
+```bash
+npm install                       # pulls the optional @aws-sdk/client-rekognition
+aws login                         # or any credential source the AWS SDK v3 default chain supports
+DZ_AWS=1 AWS_REGION=us-east-1 npm start
+DZ_AWS=1 node --test test/rekognition.test.js   # includes a live DetectLabels call
+```
+
+| What | Code |
+|---|---|
+| DetectLabels call (SDK v3, default credential chain) | [`lib/rekognition.js`](lib/rekognition.js) `detectLabels()` |
+| Label → detection mapping (Person/Dog/Cat/Car… instances with boxes); Pool/Water/Hot Tub become **hazard hints**, never a "safe" signal | `mapLabels()` (unit-tested) |
+| HTTP endpoint | `POST /api/vision/rekognition` in [`server.js`](server.js); advertised in `GET /api/config` → `vision.rekognition` |
+| Used by | PWA `scoreFrame()` in [`public/app/main.js`](public/app/main.js) and the judge demo `analyseImage()` in [`public/app.js`](public/app.js) whenever the server reports Rekognition is enabled; detections go to the same `evaluateZone()` |
+
+**Real results (23 Oct 2026, us-east-1):**
+- A dog-on-lawn photo: Dog 97.8% with a box, so the zone reads **NOT_CLEAR (PET_IN_ZONE)**. 533 ms.
+- A frame from our 3D simulation's Ring view: hazard hints pool, water and hot tub. The low-poly simulated dog was **not** detected, so synthetic scenes aren't a fair test of the detector.
+- The ring-partner-sandbox placeholder snapshot: no people, pets or vehicles. 160 ms.
+
+Amazon Bedrock (Nova Lite, [`lib/bedrock.js`](lib/bedrock.js)) is also wired as an optional detector, but **it does not work on our account yet**: `ValidationException: Operation not allowed` while the account is being verified. We don't claim it.
 
 ## Run it
 

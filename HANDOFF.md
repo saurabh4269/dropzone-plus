@@ -137,6 +137,15 @@ The camera footer should read "detector: Amazon Bedrock …". A project can win 
   - mdpi.com returned 403, so the comparison describes only the abstract (via Crossref).
 - Video idea: 15 s of `/sim/` showing the umbrella case, where only one of the two cameras knows.
 
+## AWS (real runs, 23 Oct 2026, us-east-1, via `aws login`)
+- **Amazon Rekognition DetectLabels works.** Run it with `DZ_AWS=1 npm start`; code in `lib/rekognition.js`, endpoint `POST /api/vision/rekognition`. These are real outputs through the server endpoint:
+  - Dog-on-lawn photo: `Dog 97.8%` (box), `potted plant 0.535`, giving the verdict NOT_CLEAR / PET_IN_ZONE in 533 ms.
+  - 3D-sim Ring view (dog in the zone): labels `Grass 100%, Plant 100%, Field 99%, Tennis Ball 92%`, hazard hints `hot tub, pool, water`. The simulated dog was not detected, so a synthetic render isn't a fair test.
+  - ring-partner-sandbox placeholder snapshot: labels `Text, Computer, Door…`, no detections, 160 ms.
+  - `DZ_AWS=1 node --test test/rekognition.test.js` gives 2/2 pass, including the live call.
+- **Amazon Bedrock does NOT work yet:** `ValidationException: Operation not allowed` (account verification). Don't claim it.
+- **AWS Builder mini-challenge:** we can win only one mini-challenge, and Open Source is still the stronger entry. If you want to enter AWS Builder instead, the evidence is the README "AWS" section plus these outputs. Credentials were never written to the repo.
+
 ## Open source (separate repo)
 - **https://github.com/saurabh4269/ring-partner-sandbox** (MIT, public, 23 tests). It's a local mock of the Ring Partner API with JSON:API shapes, the Bearer/`User-Agent`/`Hardware_Id` 406 rules, the 303 snapshot flow, and history with an `event_types` filter. It also includes a signed v1.1 webhook simulator covering all 10 event types, timed scenarios that keep history and webhooks consistent, and a verifier library (JS and Python) with middleware.
 - It addresses exactly what the Playground lacks (a 30-minute token, no webhooks). DropZone+'s live mode was tested end to end against it: discovery, status, capabilities, history, snapshot, then COCO-SSD scoring and a signed webhook that triggers a re-check.
