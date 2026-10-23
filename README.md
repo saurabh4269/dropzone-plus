@@ -1,13 +1,25 @@
 # DropZone+
 
 **Your Ring camera checks the drone drop zone before the drone arrives.**
-Ring sees the zone, Alexa tells the household, a smart pet door can fix the problem (with the owner's yes), and the drone carrier gets a HOLD signal. The carrier never receives video and never receives a "safe to land".
+Ring sees the zone, Alexa tells the household (simulated Alexa+ add-on), a smart pet door can fix the problem with the owner's yes (simulated), and the drone carrier gets a HOLD signal. The carrier never receives video and never receives a "safe to land".
 
-- **Landing:** https://saurabh4269.github.io/dropzone-plus/
-- **App (PWA):** https://saurabh4269.github.io/dropzone-plus/app/
-- **Interactive judge demo (replay mode, no login, no token):** https://saurabh4269.github.io/dropzone-plus/demo.html
-- **Demo video:** _link added at submission_
-- Built for the Amazon Developer Hackathon 2026, **Ring track** ("Ring meets Alexa and other connected devices").
+![DropZone+: a Ring camera watching a backyard drop zone as a delivery drone approaches](docs/hero-3d.jpg)
+
+| | |
+|---|---|
+| 📱 **App (installable PWA)** | https://saurabh4269.github.io/dropzone-plus/app/ |
+| 🧪 **Interactive judge demo** (replay, no login, no token) | https://saurabh4269.github.io/dropzone-plus/demo.html |
+| 🌐 **Website** | https://saurabh4269.github.io/dropzone-plus/ |
+| 🎬 **Demo video** | https://vimeo.com/1238833557 |
+| 🧾 **Friction log** | [FRICTION.md](FRICTION.md) |
+| 🧰 **Open-source companion** (Ring Partner API mock + signed webhook simulator) | https://github.com/saurabh4269/ring-partner-sandbox |
+| 🔌 **Where we call the Ring API** | [table below](#how-the-ring-api-is-used) |
+
+Built for the Amazon Developer Hackathon 2026, **Ring track** ("Ring meets Alexa and other connected devices").
+
+<img src="docs/dropzone-concept-anim.gif" alt="AI-generated concept animation of a drone approaching a backyard drop zone" width="640">
+
+*Concept animation (AI-generated illustration, not product footage). The product screens below are real.*
 
 ![DropZone+ holding a drone because a kid ran into the drop zone (replay, simulated yard)](docs/screenshot-hold.png)
 
@@ -66,17 +78,21 @@ This design follows the Ring Program Requirements.
 
 ## How the Ring API is used
 
-When `RING_ACCESS_TOKEN` is set (a Ring Developer Playground token), the server calls the **Ring Partner API** (`https://api.amazonvision.com`, JSON:API) at runtime. The client is [`lib/ring.js`](lib/ring.js) and has no SDK dependency; every request sends the documented `User-Agent` and `Hardware_Id` headers.
+The **Ring Partner API** (`https://api.amazonvision.com`, JSON:API) is imported and called at runtime by the server whenever a Ring token is present: from the Playground, from Partner-Initiated OAuth, or from `RING_ACCESS_TOKEN`. The docs require server-to-server calls (browsers are blocked by CORS), so the web app and PWA go through `server.js`. The client [`lib/ring.js`](lib/ring.js) has no SDK dependency, and every request sends the documented `User-Agent` and `Hardware_Id` headers.
 
-| Ring endpoint | Used for |
-|---|---|
-| `GET /v1/users/me` | account check |
-| `GET /v1/devices?include=status,capabilities` | discovering the camera (the Playground's simulated DoorbellPro) |
-| `GET /v1/devices/{id}/status`, `/capabilities` | online state and capabilities shown in the UI |
-| `GET /v1/history/devices/{id}/events?event_types=…` | recent event history |
-| `POST /v1/devices/{id}/media/image/download` (`latest_in_range`) → 303 → signed GET | **zone-check frames and proof-of-drop snapshots**. `X-Media-Timestamp` becomes the verdict's `observed_at`; any failure becomes UNKNOWN |
-| `POST /v1/devices/{id}/media/streaming/whep/sessions` + `DELETE` | **live view (WebRTC/WHEP, recvonly)**; the "Analyse live frame" button runs detection on the live video |
-| Webhooks (`X-Signature: sha256=…`, v1.1 payload) | `POST /webhooks/ring` verifies the HMAC over the raw bytes, deduplicates on `request_id`, and triggers an immediate re-check while a drone is inbound |
+| What | Ring endpoint | Code that calls it | Triggered by |
+|---|---|---|---|
+| Account linking (OAuth 2.0 + PKCE) | `GET account.ring.com/account/integrations/partner-link/authorize`, `POST oauth.ring.com/oauth/token` | [`lib/oauth.js`](lib/oauth.js) `authorizeUrl()`, `handleCallback()` | `GET /auth/ring/start`, `GET /auth/ring/callback` in [`server.js`](server.js) |
+| Finalise / remove the integration | `PATCH` / `DELETE /v1/accounts/me/app-integrations` | `ring.completeIntegration()`, `ring.removeIntegration()` in [`lib/ring.js`](lib/ring.js) | OAuth callback; Settings → Disconnect |
+| Token check | `GET /v1/users/me` | `ring.me()` | `POST /api/ring/token` (Playground token onboarding), discovery |
+| Camera discovery | `GET /v1/devices?include=status,capabilities` | `ring.devices()`, `pickDevice()`, `summarizeDevice()` (follows JSON:API `relationships` → `included`) | `GET /api/ring/devices` (PWA camera picker), `GET /api/ring/discover` |
+| Status / capabilities | `GET /v1/devices/{id}/status`, `/capabilities` | `ring.status()`, `ring.capabilities()` | `GET /api/ring/discover` |
+| Event history | `GET /v1/history/devices/{id}/events?event_types=…` | `ring.history()` | `GET /api/ring/discover` |
+| **Snapshots** for zone checks and proof of drop | `POST /v1/devices/{id}/media/image/download` (`latest_in_range`) → 303 → signed `GET /v1/download` | `ring.snapshot()` (manual redirect; the bearer token is not sent to the download host) | `GET /api/ring/snapshot?device=` ← PWA Check now and delivery window, demo "Check zone now", proof of drop |
+| **Live view** (WebRTC/WHEP, recvonly) | `POST /v1/devices/{id}/media/streaming/whep/sessions`, `DELETE …/sessions/{id}` | `ring.whepStart()`, `ring.whepStop()` | `POST`/`DELETE /api/ring/whep` ← PWA Live view, demo Live view |
+| **Webhooks** (v1.1, `X-Signature: sha256=<hex>`) | Ring → `POST /webhooks/ring` | `verify()` and `firstDelivery()` in [`lib/webhook.js`](lib/webhook.js); handler in `server.js` | A motion event re-checks the zone while a drone is inbound (SSE `/api/events`) |
+
+Runtime proof without a Playground token: `test/live.integration.test.js` boots `server.js` against [ring-partner-sandbox](https://github.com/saurabh4269/ring-partner-sandbox) and exercises discovery, snapshot (303), signed webhooks and SSE. `npm run ring:probe` does the same against the real API with your token.
 
 The Playground can't send webhooks, so [`scripts/simulate-events.js`](scripts/simulate-events.js) sends **Ring-shaped, HMAC-signed, labelled-simulated** events through the same verifier. Amazon said on the forum that a self-written simulator is fine ([thread 45511](https://amazonappdev2026.devpost.com/forum_topics/45511-ring-track-does-simulator-include-one-i-wrote-myself)).
 
@@ -88,7 +104,13 @@ The Playground can't send webhooks, so [`scripts/simulate-events.js`](scripts/si
 |---|---|
 | Zone geometry, CLEAR/NOT_CLEAR/UNKNOWN logic, expiry, zone audit | **Real** (`public/core/zone.js`, unit-tested) |
 | Veto-only carrier advisory contract (`GET /api/v1/advisory`) | **Real** API; the **carrier that consumes it is simulated** |
-| Object detection on Ring snapshots, Ring live frames, and photos you upload | **Real**: TensorFlow.js COCO-SSD running in the browser |
+| Object detection on Ring snapshots, Ring live frames, and photos you upload | **Real**: TensorFlow.js COCO-SSD running in the browser, vendored in `public/vendor/` (no CDN needed) |
+| Proof of drop (where the box landed) | **Real** before/after change detection (`public/core/changes.js`); in the demo it runs on simulated frames |
+| Ring account linking (Partner-Initiated OAuth 2.0) | **Real code per the docs, never run against Ring**: needs partner credentials we don't have. Unit-tested with a fake token endpoint |
+| PWA: onboarding, saved drop zones, history, settings, offline shell | **Real** (data in this browser's `localStorage`) |
+| PWA "demo home" camera (Backyard Cam, Front Door offline) | **Simulated**, labelled "Demo home · simulated" on every screen |
+| Delivery partners (SkyHop Air, ParcelWing, Neighborly Drone Co-op) | **Fictional example partners, simulated**; no real company is integrated or depicted |
+| Hero image and concept GIF at the top of this README | AI-generated illustrations, not product footage |
 | Ring Partner API calls (discovery, history, snapshot, WHEP) | **Real** in LIVE mode (needs a Playground token) |
 | Ring webhooks | Real HMAC verification; **events simulated** (the Playground can't send webhooks) |
 | Replay yard, actors and their "detections" | **Simulated**: a drawn scene with **scripted** boxes, labelled "SIMULATED FEED · REPLAY" and "(scripted)" on screen |
@@ -100,23 +122,42 @@ Nothing here is affiliated with, endorsed by, or connected to any drone operator
 
 ## Architecture
 
-```
- Ring Partner API (api.amazonvision.com)          Ring webhooks (HMAC)  ← scripts/simulate-events.js (simulated)
-   │ discovery · history · snapshot · WHEP              │
-   ▼                                                    ▼
- server.js (Node ≥20, zero deps) ── token stays server-side ── /webhooks/ring → SSE /api/events
-   │ /api/ring/*            ▲ POST /api/state (latest verdict)
-   ▼                        │
- Browser app (public/)  ────┘        GET /api/v1/advisory  → carrier (simulated): HOLD | NO_ADVISORY
-   ├─ detector.js   COCO-SSD (TF.js) on Ring frames / uploads
-   ├─ core/zone.js      detections + polygon → CLEAR | NOT_CLEAR | UNKNOWN (+ expiry, audit)
-   ├─ core/engine.js    delivery window: heads-ups, consent, holds, receipt
-   ├─ core/alexa.js     simulated Alexa+ utterances / prompts      ← also via mcp/dropzone-mcp.js (MCP, stdio)
-   ├─ core/petdoor.js   simulated pet door (consent-gated)
-   └─ core/advisory.js  veto-only carrier contract
+```mermaid
+flowchart LR
+  subgraph Ring["Ring (Amazon)"]
+    API["Ring Partner API<br/>api.amazonvision.com"]
+    OAUTH["account.ring.com / oauth.ring.com"]
+    WH["Webhooks v1.1 (HMAC)"]
+  end
+  subgraph Server["server.js (Node ≥20, zero deps)"]
+    RC["lib/ring.js<br/>devices · status · history · snapshot · WHEP"]
+    OA["lib/oauth.js<br/>PKCE · state · token exchange"]
+    WV["lib/webhook.js<br/>HMAC verify · idempotency"]
+    ADV["GET /api/v1/advisory<br/>HOLD | NO_ADVISORY"]
+    SSE["SSE /api/events"]
+  end
+  subgraph Client["Browser: PWA /app and judge demo"]
+    DET["detector.js<br/>COCO-SSD (vendored TF.js)"]
+    ZONE["core/zone.js<br/>CLEAR · NOT_CLEAR · UNKNOWN<br/>audit + suggested zone"]
+    ENG["core/engine.js<br/>delivery window"]
+    CHG["core/changes.js<br/>proof of drop"]
+    ALX["core/alexa.js<br/>simulated Alexa+ add-on"]
+    PD["core/petdoor.js<br/>simulated pet door"]
+  end
+  CAR["Drone partner<br/>(simulated example)"]
+  MCP["mcp/dropzone-mcp.js<br/>MCP tools"]
+  API <--> RC
+  OAUTH <--> OA
+  WH --> WV --> SSE --> ENG
+  RC -->|frames| DET --> ZONE --> ENG
+  ENG --> ALX
+  ENG --> PD
+  ENG --> CHG
+  ENG -->|latest verdict| ADV --> CAR
+  ADV --> MCP
 ```
 
-The `public/core/*` modules are pure ES modules shared by the browser, the server and the tests. That's why the same logic runs as a static site (GitHub Pages, replay) and against live Ring.
+The `public/core/*` modules are pure ES modules shared by the browser, the server and the tests. That's why the same logic runs as a static site (GitHub Pages: PWA demo home and replay demo) and against live Ring.
 
 ## Run it
 
