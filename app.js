@@ -1,4 +1,4 @@
-import { evaluateZone, freshen, auditZone, STATUS } from './core/zone.js';
+import { evaluateZone, freshen, auditZone, suggestZone, polygonCentroid, STATUS } from './core/zone.js';
 import { createSession, PHASE } from './core/engine.js';
 import { SCENARIOS, DEFAULT_ZONE, actorAt, sizeAt, scriptedDetections } from './scenarios.js';
 import { W, H, drawYard, drawCameraChrome, drawActor, drawPolygon, drawDetections, drawDrone, drawPackage, drawUnreadable } from './scene.js';
@@ -39,6 +39,7 @@ function newSession() {
   $('speechText').textContent = '“Alexa” lines appear here.';
   app.receiptPending = false;
   app.beforeFrame = null;
+  app.zoneMoved = false;
   app._lastStatus = null;
   renderAudit();
 }
@@ -179,10 +180,17 @@ const full = Object.assign(document.createElement('canvas'), { width: W, height:
 const fctx = full.getContext('2d');
 
 /** The replay yard without overlays (no zone lines, labels or drone), optionally with the dropped box. */
+/** Where the (simulated) drone puts the box: the scripted spot, or the middle of the zone if the owner moved it. */
+function dropPoint() {
+  if (!app.zoneMoved) return app.scn.drop.at;
+  const [cx, cy] = polygonCentroid(app.zone);
+  return [cx, cy + 0.04];
+}
+
 function replayFrame(withPackage) {
   drawYard(fctx);
   for (const a of app.scn.actors) { const p = actorAt(a, app.simT); if (p) drawActor(fctx, a.emoji, p.x, p.y, sizeAt(a, p.y)); }
-  if (withPackage) drawPackage(fctx, app.scn.drop.at[0], app.scn.drop.at[1]);
+  if (withPackage) { const d = dropPoint(); drawPackage(fctx, d[0], d[1]); }
   sctx.drawImage(full, 0, 0, SW, SH);
   return sctx.getImageData(0, 0, SW, SH);
 }
@@ -231,7 +239,7 @@ function draw() {
 
   // drone + package (replay only; live drops come from a real snapshot)
   if (app.view === 'scene' && s.delivery) {
-    const d = app.scn.drop.at;
+    const d = dropPoint();
     const eta = s.delivery.etaAt;
     if (s.phase === PHASE.LANDING) { const f = Math.min(1, Math.max(0, 1 - (eta - now()) / 60000)); drawDrone(ctx, d[0] + (1 - f) * 0.3, 0.05 + f * (d[1] - 0.3), 0.7 + f * 0.6); }
     if (s.phase === PHASE.HOLDING) drawDrone(ctx, 0.85, 0.06, 0.6);
@@ -241,6 +249,7 @@ function draw() {
       if (lift < 1) drawDrone(ctx, d[0] + lift * 0.4, d[1] - 0.25 - lift * 0.4, 1.2 - lift * 0.5);
     }
   }
+  if (app.suggestion) drawPolygon(ctx, app.suggestion.zone, { stroke: 'rgba(255,255,255,.85)', dash: [3, 6], width: 3, label: 'SUGGESTED ZONE', labelColor: '#111', labelBelow: true });
   const rb = s.receipt?.package_box;
   if (rb) {
     ctx.save(); ctx.strokeStyle = '#3ee6ff'; ctx.lineWidth = 3; ctx.strokeRect(rb[0] * W - 4, rb[1] * H - 4, rb[2] * W + 8, rb[3] * H + 8);
@@ -284,7 +293,17 @@ function renderAudit() {
   const box = $('audit');
   box.innerHTML = '';
   const f = app.hazards.length ? auditZone(app.zone, app.hazards) : [{ level: 'ok', text: 'Zone audit: no hazards marked. Outline a pool, pond or hard patio edge once with “Mark hazard”.' }];
-  for (const x of f) { const d = document.createElement('div'); d.className = x.level; d.textContent = (x.level === 'ok' ? '✓ ' : '⚠ ') + x.text + (x.code === 'HAZARD_NEAR_ZONE' ? ' Suggest moving the zone away from it.' : ''); box.append(d); }
+  for (const x of f) { const d = document.createElement('div'); d.className = x.level; d.textContent = (x.level === 'ok' ? '✓ ' : '⚠ ') + x.text; box.append(d); }
+  app.suggestion = suggestZone(app.zone, app.hazards);
+  if (app.suggestion) {
+    const d = document.createElement('div');
+    d.className = 'suggest';
+    d.innerHTML = `<span>💡 Suggested: move the drop zone ${app.suggestion.satisfied ? 'to the dotted outline. That clears every marked hazard.' : 'to the dotted outline (as far as the camera view allows; still close, consider another spot).'}</span>`;
+    const b = Object.assign(document.createElement('button'), { className: 'primary', textContent: 'Apply suggestion' });
+    b.onclick = () => { app.zone = app.suggestion.zone; app.zoneMoved = true; if (app.mode === 'live') localStorage.setItem('dz.zone', JSON.stringify(app.zone)); renderAudit(); rescore(); onEvent('vision', { text: 'Drop zone moved to the suggested spot (owner approved).' }); };
+    d.append(b);
+    box.append(d);
+  }
 }
 
 function renderReceipt(r) {
@@ -391,7 +410,7 @@ function toggleEdit(kind) {
   const btn = kind === 'zone' ? $('editZoneBtn') : $('hazardBtn');
   if (app.edit === kind) {
     if (app.editPts.length >= 3) {
-      if (kind === 'zone') { app.zone = app.editPts; if (app.mode === 'live') localStorage.setItem('dz.zone', JSON.stringify(app.zone)); }
+      if (kind === 'zone') { app.zone = app.editPts; app.zoneMoved = true; if (app.mode === 'live') localStorage.setItem('dz.zone', JSON.stringify(app.zone)); }
       else {
         const k = (prompt('What is it? (e.g. pool, pond, patio edge, overhang)', 'pool') || 'hazard').trim();
         app.hazards = [...app.hazards, { kind: k, polygon: app.editPts }];
@@ -567,4 +586,5 @@ async function boot() {
   requestAnimationFrame(loop);
 }
 
+window.dropzone = { seek, app }; // test/demo hook (used by scripts/e2e.mjs)
 boot();

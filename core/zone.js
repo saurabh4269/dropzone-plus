@@ -161,5 +161,44 @@ export function auditZone(zone, hazards = [], { frameWidthFt = 40 } = {}) {
   return findings;
 }
 
+const minGapFt = (kind) => (/pool|pond|water/i.test(kind) ? 15 : 10);
+
+function hazardGapFt(zone, h, frameWidthFt) {
+  const c = polygonCentroid(zone);
+  const overlaps = zone.some((p) => pointInPolygon(p, h.polygon)) || h.polygon.some((p) => pointInPolygon(p, zone));
+  if (overlaps) return 0;
+  return Math.min(...h.polygon.map((p) => Math.hypot(p[0] - c[0], p[1] - c[1])), distanceToPolygon(c, h.polygon)) * frameWidthFt;
+}
+
+/**
+ * Suggest where to move the zone so every marked hazard is outside its downwash margin.
+ * Slides the zone straight away from the hazards in small steps, staying inside the visible ground
+ * (`bounds`). Returns null if the zone is already fine; otherwise { zone, dx, dy, satisfied, worstGapFt }.
+ */
+export function suggestZone(zone, hazards = [], { frameWidthFt = 40, bounds = [0.02, 0.36, 0.98, 0.98], step = 0.01 } = {}) {
+  if (!zone || zone.length < 3 || !hazards.length) return null;
+  const worst = (z) => Math.min(...hazards.map((h) => hazardGapFt(z, h, frameWidthFt) - minGapFt(h.kind)));
+  if (worst(zone) >= 0) return null;
+  const c = polygonCentroid(zone);
+  // direction: away from the (unweighted) mean of hazard centroids
+  const hc = hazards.map((h) => polygonCentroid(h.polygon)).reduce(([a, b], [x, y]) => [a + x / hazards.length, b + y / hazards.length], [0, 0]);
+  let [ux, uy] = [c[0] - hc[0], c[1] - hc[1]];
+  const len = Math.hypot(ux, uy) || 1;
+  [ux, uy] = [ux / len, uy / len];
+  const inBounds = (z) => z.every(([x, y]) => x >= bounds[0] && x <= bounds[2] && y >= bounds[1] && y <= bounds[3]);
+  let best = null;
+  for (let k = 1; k <= 60; k++) {
+    for (const [ax, ay] of [[ux, uy], [ux, 0], [0, uy]]) { // straight away, then purely sideways / purely depth
+      const dx = ax * step * k, dy = ay * step * k;
+      const z = zone.map(([x, y]) => [x + dx, y + dy]);
+      if (!inBounds(z)) continue;
+      const g = worst(z);
+      if (!best || g > best.g) best = { z, dx, dy, g };
+      if (g >= 0) return { zone: z.map((p) => p.map((n) => Math.round(n * 1000) / 1000)), dx, dy, satisfied: true, worstGapFt: Math.round(g) };
+    }
+  }
+  return best ? { zone: best.z, dx: best.dx, dy: best.dy, satisfied: false, worstGapFt: Math.round(best.g) } : null;
+}
+
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 function round(n) { return Math.round(n * 1000) / 1000; }
