@@ -1,0 +1,30 @@
+{
+  "manifest": {
+    "publishingInformation": {
+      "locales": {
+        "en-US": {
+          "name": "DropZone Home",
+          "summary": "Virtual yard lights, sprinkler and pet door for the DropZone drone drop zone demo.",
+          "description": "DropZone Home exposes three virtual demo devices (Yard Lights, Sprinkler, Pet Door) that DropZone uses to help clear a drone drop zone. They are virtual: no real hardware is switched.",
+          "examplePhrases": ["Alexa, turn on yard lights", "Alexa, turn off sprinkler", "Alexa, lock pet door"],
+          "keywords": ["dropzone", "drone", "delivery"]
+        }
+      },
+      "isAvailableWorldwide": false,
+      "distributionCountries": ["US"],
+      "testingInstructions": "Virtual devices only. Link with Login with Amazon, discover devices, then say: turn on yard lights, turn off sprinkler, lock pet door.",
+      "category": "SMART_HOME"
+    },
+    "apis": {
+      "smartHome": {
+        "endpoint": { "uri": "arn:aws:lambda:us-east-1:248179617208:function:dropzone-home-smarthome" },
+        "protocolVersion": "3"
+      }
+    },
+    "manifestVersion": "1.0",
+    "privacyAndCompliance": {
+      "allowsPurchases": false, "isExportCompliant": true, "containsAds": false, "isChildDirected": false, "usesPersonalInfo": false,
+      "locales": { "en-US": { "privacyPolicyUrl": "https://github.com/saurabh4269/dropzone-plus", "termsOfUseUrl": "https://github.com/saurabh4269/dropzone-plus" } }
+    }
+  }
+}
