@@ -3,6 +3,7 @@ import { createSession, PHASE } from './core/engine.js';
 import { SCENARIOS, DEFAULT_ZONE, actorAt, sizeAt, scriptedDetections } from './scenarios.js';
 import { W, H, drawYard, drawCameraChrome, drawActor, drawPolygon, drawDetections, drawDrone, drawPackage, drawUnreadable } from './scene.js';
 import { loadDetector, detect } from './detector.js';
+import { findNewObject } from './core/changes.js';
 
 const $ = (id) => document.getElementById(id);
 const cv = $('cam');
@@ -37,6 +38,7 @@ function newSession() {
   $('promptBox').classList.add('hidden');
   $('speechText').textContent = '“Alexa” lines appear here.';
   app.receiptPending = false;
+  app.beforeFrame = null;
   app._lastStatus = null;
   renderAudit();
 }
@@ -66,6 +68,7 @@ function onEvent(type, e) {
     if (e.kind === 'hold') text = `Carrier checked advisory at T−60 s: HOLD ${e.advisory.reason_codes.join(', ')} → waits ${e.advisory.hold_seconds}s (hold ${e.holds}/3)`;
     else if (e.kind === 'final-approach') text = `Carrier checked advisory: ${e.advisory.advice} → final approach under its own detect-and-avoid`;
     else if (e.kind === 'dropped') { text = 'Package released'; app.dropAt = now(); app.receiptPending = true; }
+    if (e.kind === 'final-approach' && app.mode === 'replay' && app.view === 'scene') app.beforeFrame = replayFrame(false); // reference frame for proof-of-drop
   } else if (type === 'delivery') {
     text = `Drone order (${e.carrier}, ref ${e.ref}) · ETA ${fmtTime(Date.parse(e.eta))}`;
   } else if (type === 'receipt') {
@@ -160,11 +163,36 @@ function replayStep(dt) {
   app.session.tick();
   if (app.receiptPending && now() - app.dropAt > 5000) {
     app.receiptPending = false;
-    const d = app.scn.drop;
-    const box = d.unseen ? null : [d.at[0] - 0.02, d.at[1] - 0.045, 0.04, 0.045];
-    app.session.recordDrop({ packageBox: box, observedAt: now(), source: d.unseen ? 'replay (frame unreadable)' : 'replay' });
+    // Proof of drop: real change detection between the pre-drop and post-drop (simulated) frames.
+    const unreadable = app.scn.media && !app.scn.media.readable;
+    const r = unreadable || !app.beforeFrame ? { ok: false, reason: unreadable ? 'MEDIA_UNREADABLE' : 'NO_REFERENCE_FRAME' } : findNewObject(app.beforeFrame, replayFrame(true), { zone: app.zone, hazards: app.hazards });
+    app.session.recordDrop({ packageBox: r.ok ? r.box : null, observedAt: now(), source: 'replay (simulated frames)', method: 'change-detection', detail: r.ok ? null : r.reason });
   }
   if (app.simT >= app.scn.durationSec) { app.playing = false; $('playBtn').textContent = '▶ Play'; }
+}
+
+// Small RGBA frames for change detection (160x90 is plenty and fast).
+const SW = 160, SH = 90;
+const small = Object.assign(document.createElement('canvas'), { width: SW, height: SH });
+const sctx = small.getContext('2d', { willReadFrequently: true });
+const full = Object.assign(document.createElement('canvas'), { width: W, height: H });
+const fctx = full.getContext('2d');
+
+/** The replay yard without overlays (no zone lines, labels or drone), optionally with the dropped box. */
+function replayFrame(withPackage) {
+  drawYard(fctx);
+  for (const a of app.scn.actors) { const p = actorAt(a, app.simT); if (p) drawActor(fctx, a.emoji, p.x, p.y, sizeAt(a, p.y)); }
+  if (withPackage) drawPackage(fctx, app.scn.drop.at[0], app.scn.drop.at[1]);
+  sctx.drawImage(full, 0, 0, SW, SH);
+  return sctx.getImageData(0, 0, SW, SH);
+}
+
+/** An image (Ring snapshot) letterboxed the same way the camera panel shows it, so boxes share coordinates. */
+function imageFrame(img) {
+  const [x, y, w, h] = fitRect(img.naturalWidth, img.naturalHeight);
+  sctx.fillStyle = '#000'; sctx.fillRect(0, 0, SW, SH);
+  sctx.drawImage(img, (x * SW) / W, (y * SH) / H, (w * SW) / W, (h * SH) / H);
+  return sctx.getImageData(0, 0, SW, SH);
 }
 
 // Jump the replay forward (deterministic), e.g. ?seek=420 for screenshots and the demo video.
@@ -213,6 +241,12 @@ function draw() {
       if (lift < 1) drawDrone(ctx, d[0] + lift * 0.4, d[1] - 0.25 - lift * 0.4, 1.2 - lift * 0.5);
     }
   }
+  const rb = s.receipt?.package_box;
+  if (rb) {
+    ctx.save(); ctx.strokeStyle = '#3ee6ff'; ctx.lineWidth = 3; ctx.strokeRect(rb[0] * W - 4, rb[1] * H - 4, rb[2] * W + 8, rb[3] * H + 8);
+    ctx.font = '600 16px system-ui, sans-serif'; const t = 'new object · change detection'; const tw = ctx.measureText(t).width;
+    ctx.fillStyle = '#3ee6ff'; ctx.fillRect(rb[0] * W - 4, (rb[1] + rb[3]) * H + 6, tw + 10, 22); ctx.fillStyle = '#04161c'; ctx.fillText(t, rb[0] * W + 1, (rb[1] + rb[3]) * H + 22); ctx.restore();
+  }
   if (app.edit) drawPolygon(ctx, app.editPts, { stroke: '#fff', dash: [2, 4], width: 2 });
   const label = app.view === 'scene' ? 'Backyard cam · simulated' : app.view === 'video' ? 'Ring live view (WHEP)' : app.imageLabel;
   drawCameraChrome(ctx, { label, time: fmtTime(now()), simulated: app.view === 'scene' });
@@ -254,10 +288,10 @@ function renderAudit() {
 }
 
 function renderReceipt(r) {
-  const label = { in_zone: 'Landed inside the drop zone', outside_zone: 'Landed OUTSIDE the drop zone', hazard: `Landed next to the ${r.hazard}`, unknown: 'Placement not confirmed (no readable frame / owner to verify)' }[r.placement];
+  const label = { in_zone: 'Landed inside the drop zone', outside_zone: 'Landed OUTSIDE the drop zone', hazard: `Landed next to the ${r.hazard}`, unknown: 'Placement not confirmed: owner to verify' }[r.placement];
   $('receiptBox').innerHTML = `<div class="place ${r.placement}"></div><div class="fine"></div>${r.snapshot ? `<img alt="Ring proof-of-drop snapshot" src="${r.snapshot}">` : ''}<details><summary>receipt JSON</summary><pre></pre></details>`;
   $('receiptBox').querySelector('.place').textContent = label;
-  $('receiptBox').querySelector('.fine').textContent = `ref ${r.delivery_ref} · observed ${r.observed_at ? fmtTime(Date.parse(r.observed_at)) : '—'} · source ${r.source} · holds requested ${r.holds_requested}`;
+  $('receiptBox').querySelector('.fine').textContent = `ref ${r.delivery_ref} · observed ${r.observed_at ? fmtTime(Date.parse(r.observed_at)) : '—'} · source ${r.source} · holds requested ${r.holds_requested} · located by ${r.method === 'change-detection' ? (r.package_box ? 'before/after change detection' : `change detection: ${(r.detail || '').replaceAll('_', ' ').toLowerCase()}`) : r.method}`;
   $('receiptBox').querySelector('pre').textContent = JSON.stringify(r, null, 2);
 }
 
@@ -441,8 +475,12 @@ function wire() {
     ringSnapshot();
   };
   $('proofBtn').onclick = async () => {
+    const before = app.image; // last Ring frame from before the drop
     const r = await ringSnapshot();
-    app.session.recordDrop({ packageBox: null, observedAt: r?.observedAt || Date.now(), snapshotUrl: r?.url, source: 'ring-snapshot' });
+    let found = { ok: false, reason: 'NO_REFERENCE_FRAME' };
+    if (before && r?.url && app.image && app.image !== before) found = findNewObject(imageFrame(before), imageFrame(app.image), { zone: app.zone, hazards: app.hazards });
+    else if (!r?.url) found = { ok: false, reason: 'MEDIA_UNREADABLE' };
+    app.session.recordDrop({ packageBox: found.ok ? found.box : null, observedAt: r?.observedAt || Date.now(), snapshotUrl: r?.url, source: 'ring-snapshot', method: 'change-detection', detail: found.ok ? null : found.reason });
   };
 }
 

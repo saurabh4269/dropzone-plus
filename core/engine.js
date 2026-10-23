@@ -102,7 +102,7 @@ export function createSession({ zone, hazards = [], household = { hasPetDoor: tr
       }
     },
     /** Post-drop proof from a Ring frame: where did the box end up? */
-    recordDrop({ packageBox, observedAt, snapshotUrl, source }) {
+    recordDrop({ packageBox, observedAt, snapshotUrl, source, method = packageBox ? 'provided' : 'none', detail = null }) {
       let placement = 'unknown', hazard = null;
       if (packageBox) {
         const fp = footprint(packageBox);
@@ -117,6 +117,9 @@ export function createSession({ zone, hazards = [], household = { hasPetDoor: tr
         observed_at: observedAt ? new Date(observedAt).toISOString() : null,
         snapshot: snapshotUrl || null,
         source,
+        method,           // 'change-detection' | 'provided' | 'none'
+        package_box: packageBox ? packageBox.map((n) => Math.round(n * 1000) / 1000) : null,
+        detail,
         holds_requested: s.holdsIssued,
       };
       petDoor.restore('drone departed', now());
