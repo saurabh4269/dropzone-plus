@@ -505,7 +505,7 @@ async function boot() {
   const forceReplay = new URLSearchParams(location.search).has('replay');
   if (cfg?.mode === 'live' && !forceReplay) {
     app.mode = 'live';
-    $('modeBadge').textContent = 'LIVE · Ring Playground';
+    $('modeBadge').textContent = cfg.ring.official ? 'LIVE · Ring Partner API' : `LIVE · mock Ring API (${new URL(cfg.ring.api).host})`;
     $('modeBadge').className = 'badge live';
     $('replayControls').classList.add('hidden');
     $('liveControls').classList.remove('hidden');

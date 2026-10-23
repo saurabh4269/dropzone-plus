@@ -35,7 +35,7 @@ export function createSession({ zone, hazards = [], household = { hasPetDoor: tr
   function maybeAnnounce(force = false) {
     if (!s.delivery || ![PHASE.INBOUND, PHASE.HOLDING].includes(s.phase)) return;
     const v = freshen(s.verdict, now());
-    const key = v.status + ':' + (v.reasons?.[0]?.code || '');
+    const key = v.status === STATUS.NOT_CLEAR ? v.status + ':' + (v.reasons?.[0]?.code || '') : v.status; // UNKNOWN for a new reason isn't news
     if (!force && key === s.announcedFor) return;
     // Only speak up on the first look and when things get worse/unknown; "now clear" is a quiet card update.
     if (!force && s.announcedFor && v.status === STATUS.CLEAR) { s.announcedFor = key; log('alexa', { kind: 'card', card: { title: 'Drop zone clear', body: 'The drop zone is clear again.' } }); return; }
