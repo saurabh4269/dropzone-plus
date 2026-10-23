@@ -13,14 +13,14 @@
     <a class="brand" href="./" title="DropZone home" style="color:inherit;text-decoration:none">
       <span class="logo">◎</span>
       <div>
-        <h1>DropZone<span class="plus">+</span></h1>
+        <h1>DropZone</h1>
         <p class="tag">Your Ring camera checks the drone drop zone before the drone arrives.</p>
       </div>
     </a>
     <div class="badges">
       <a class="badge" href="./app/" style="color:var(--ring);text-decoration:none;border:1px solid var(--ring)">Get the app →</a>
       <span id="modeBadge" class="badge sim">REPLAY · simulated</span>
-      <span class="badge policy" title="Ring Program Requirements 2.8: advisory only. Can delay, never authorises.">Advisory · veto-only</span>
+      <span class="badge policy" title="Ring Program Requirements 2.8: advisory only. Can delay, never authorises.">Advisory · hold only</span>
     </div>
   </header>
 
@@ -52,7 +52,7 @@
     <li><b>Ring sees the zone</b><span>Ring frames → CLEAR / NOT CLEAR / UNKNOWN, timestamped, expires in 90 s</span></li>
     <li><b>Alexa tells the household</b><span>“There's a dog in the drop zone, drone in 8 min”</span></li>
     <li><b>Devices help, with your yes</b><span>Pet door goes come-in-only, yard lights come on at dusk, the sprinkler run is paused, then each restores itself</span></li>
-    <li><b>Carrier gets one bit</b><span>HOLD or nothing. Never video, never “safe to land”</span></li>
+    <li><b>Carrier gets one bit</b><span>A HOLD if the zone is not clear. No video leaves the home.</span></li>
   </ol>
 
   <main class="grid">
@@ -99,7 +99,7 @@
         <div class="kv"><span>Advisory</span><b id="adviceText">NO_ADVISORY</b></div>
         <div class="kv"><span>Holds requested</span><b id="holdsText">0 / 3</b></div>
         <details><summary>GET /api/v1/advisory</summary><pre id="advJson"></pre></details>
-        <p class="fine">The carrier only ever receives HOLD or NO_ADVISORY. No video, no “safe to land”.</p>
+        <p class="fine">The carrier only ever receives HOLD or NO_ADVISORY. Never video.</p>
       </section>
 
       <section class="panel door">
@@ -137,7 +137,7 @@
   </main>
 
   <footer>
-    <p><b>What's real:</b> the zone logic, the veto-only advisory, the timing/expiry rules, in-browser object detection on photos you upload or Ring frames, and (LIVE mode) calls to the Ring Partner API.
+    <p><b>What's real:</b> the zone logic, the hold-only advisory, the timing/expiry rules, in-browser object detection on photos you upload or Ring frames, and (LIVE mode) calls to the Ring Partner API.
       <b>What's simulated:</b> the replay yard and its scripted detections, the carrier, the Alexa+ add-on, the pet door, the yard lights, the sprinkler. Nothing here is affiliated with any drone operator.</p>
     <p><a href="https://github.com/saurabh4269/dropzone-plus">Source on GitHub (MIT)</a></p>
   </footer>
