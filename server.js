@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// DropZone+ server. Zero runtime dependencies (Node >= 20).
+// DropZone server. Zero runtime dependencies (Node >= 20).
 //  - serves the web app (public/)
 //  - LIVE mode (RING_ACCESS_TOKEN set): proxies Ring Partner API calls so the token never reaches the browser
 //  - receives HMAC-signed Ring webhooks and fans them out over SSE
@@ -15,6 +15,7 @@ import { buildAdvisory } from './public/core/advisory.js';
 import { bedrockAvailable, describeWithBedrock } from './lib/bedrock.js';
 import { oauthConfigured, authorizeUrl, handleCallback, maskEmail } from './lib/oauth.js';
 import { rekognitionAvailable, detectLabels } from './lib/rekognition.js';
+import { createMcpHttpHandler } from './mcp/http.js';
 
 const ROOT = fileURLToPath(new URL('./public/', import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -215,8 +216,19 @@ async function serveStatic(req, res) {
   }
 }
 
+// MCP Streamable HTTP endpoint (spec 2025-11-25): same tools as mcp/dropzone-mcp.js, reading live server state.
+const mcpHttp = createMcpHttpHandler({
+  readBody,
+  getState: async () => latest,
+  getAdvisory: async () => buildAdvisory({ verdict: latest.verdict, delivery: latest.delivery, holdsIssued: latest.holdsIssued }),
+});
+
 const server = http.createServer(async (req, res) => {
   const path = new URL(req.url, 'http://x').pathname;
+  if (path === '/mcp') {
+    try { return await mcpHttp(req, res); }
+    catch (e) { if (!res.headersSent) return send(res, 500, { jsonrpc: '2.0', id: null, error: { code: -32603, message: e.message } }); return; }
+  }
   const handler = routes[`${req.method} ${path}`];
   if (!handler) return serveStatic(req, res);
   try {
@@ -229,5 +241,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`DropZone+ on http://${HOST}:${PORT}  mode=${ringConfigured() ? 'LIVE (Ring Playground token present)' : 'REPLAY (no RING_ACCESS_TOKEN)'}`);
+  console.log(`DropZone on http://${HOST}:${PORT}  mode=${ringConfigured() ? 'LIVE (Ring Playground token present)' : 'REPLAY (no RING_ACCESS_TOKEN)'}`);
 });

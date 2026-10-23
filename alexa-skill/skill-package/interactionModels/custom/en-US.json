@@ -1,0 +1,22 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "drop zone",
+      "intents": [
+        { "name": "CheckZoneIntent", "slots": [], "samples": ["is the yard clear", "is my drop zone clear", "is the drop zone clear", "check the drop zone", "check the yard", "can the drone land", "is it safe for the drone"] },
+        { "name": "HoldDroneIntent", "slots": [], "samples": ["ask the drone to wait", "hold the drone", "tell the drone to wait", "make the drone wait", "ask the delivery to wait"] },
+        { "name": "PetDoorIntent", "slots": [], "samples": ["set the pet door to come in only", "lock the pet door", "keep the dog inside", "close the pet door"] },
+        { "name": "YardLightsIntent", "slots": [], "samples": ["turn on the yard lights", "switch on the yard lights", "light up the yard", "turn on the floodlights"] },
+        { "name": "SprinklerPauseIntent", "slots": [], "samples": ["pause the sprinkler", "pause the sprinklers", "stop the sprinklers", "hold the sprinklers"] },
+        { "name": "AMAZON.YesIntent", "samples": [] },
+        { "name": "AMAZON.NoIntent", "samples": [] },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.FallbackIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] }
+      ],
+      "types": []
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "manifest": {
+    "publishingInformation": {
+      "locales": {
+        "en-US": {
+          "name": "DropZone",
+          "summary": "Checks your yard's drone drop zone with your Ring camera before a delivery drone arrives.",
+          "description": "DropZone tells you if the drone drop zone in your yard is clear, can ask the drone to wait, and offers to set the pet door, yard lights or sprinklers only when you say yes. Hackathon prototype: the frame source is a simulated replay and the devices are simulated.",
+          "examplePhrases": ["Alexa, open drop zone", "Alexa, ask drop zone is the yard clear", "Alexa, ask drop zone to ask the drone to wait"],
+          "keywords": ["drone", "delivery", "ring"]
+        },
+        "en-IN": {
+          "name": "DropZone",
+          "summary": "Checks your yard's drone drop zone with your Ring camera before a delivery drone arrives.",
+          "description": "DropZone tells you if the drone drop zone in your yard is clear, can ask the drone to wait, and offers to set the pet door, yard lights or sprinklers only when you say yes. Hackathon prototype: the frame source is a simulated replay and the devices are simulated.",
+          "examplePhrases": ["Alexa, open drop zone", "Alexa, ask drop zone is the yard clear", "Alexa, ask drop zone to ask the drone to wait"],
+          "keywords": ["drone", "delivery", "ring"]
+        }
+      },
+      "isAvailableWorldwide": false,
+      "testingInstructions": "Say: open drop zone, then: is the yard clear. Say yes to the pet door offer.",
+      "category": "SMART_HOME",
+      "distributionCountries": ["US", "IN"]
+    },
+    "apis": {
+      "custom": {
+        "endpoint": { "uri": "arn:aws:lambda:us-east-1:248179617208:function:dropzone-alexa-skill" }
+      }
+    },
+    "manifestVersion": "1.0",
+    "privacyAndCompliance": {
+      "allowsPurchases": false, "usesPersonalInfo": false, "isChildDirected": false, "isExportCompliant": true, "containsAds": false,
+      "locales": { "en-US": { "privacyPolicyUrl": "https://github.com/saurabh4269/dropzone-plus" }, "en-IN": { "privacyPolicyUrl": "https://github.com/saurabh4269/dropzone-plus" } }
+    }
+  }
+}
