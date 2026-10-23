@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>DropZone+</title>
+  <meta name="description" content="Your Ring camera checks the drone drop zone before the drone arrives." />
+  <meta name="theme-color" content="#0b0f14" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f5f7fa" media="(prefers-color-scheme: light)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./app.css" />
+</head>
+<body>
+  <div id="root">
+    <header class="appbar" id="appbar" hidden>
+      <button class="icon-btn" id="backBtn" aria-label="Back" hidden>‹</button>
+      <h1 id="title">DropZone+</h1>
+      <span class="appbar-right" id="appbarRight"></span>
+    </header>
+    <main id="view" tabindex="-1" aria-live="polite"></main>
+    <nav class="tabbar" id="tabbar" hidden aria-label="Main">
+      <a href="#/home" data-tab="home"><span class="ti" aria-hidden="true">⌂</span><span>Home</span></a>
+      <a href="#/zones" data-tab="zones"><span class="ti" aria-hidden="true">◎</span><span>Zones</span></a>
+      <a href="#/deliveries" data-tab="deliveries"><span class="ti" aria-hidden="true">▣</span><span>Deliveries</span></a>
+      <a href="#/partners" data-tab="partners"><span class="ti" aria-hidden="true">⇄</span><span>Partners</span></a>
+      <a href="#/settings" data-tab="settings"><span class="ti" aria-hidden="true">⚙</span><span>Settings</span></a>
+    </nav>
+    <div id="sheet" class="sheet" hidden role="dialog" aria-modal="true"><div class="sheet-card"><div class="grab"></div><div id="sheetBody"></div></div></div>
+    <div id="toast" class="toast" role="status" hidden></div>
+  </div>
+  <noscript>DropZone+ needs JavaScript.</noscript>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
