@@ -1,0 +1,29 @@
+# GitHub Actions CI for DropZone+. Install with scripts/enable-ci.sh
+# (the maintainer's token needs the `workflow` scope: gh auth refresh -h github.com -s workflow).
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm install            # pulls ring-partner-sandbox (devDependency) so LIVE-mode integration tests run
+      - run: npm test
+  browser-e2e:
+    runs-on: ubuntu-latest         # Google Chrome is preinstalled on GitHub-hosted Ubuntu runners
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run e2e           # landing + judge demo scenarios
+      - run: npm run e2e:app       # PWA journey at 390x844
