@@ -65,7 +65,7 @@
         </div>
       </div>
       <div class="stage">
-        <canvas id="cam" width="1280" height="720"></canvas>
+        <canvas id="cam" width="1280" height="720" role="img" aria-label="Camera view of the drop zone with overlays"></canvas>
         <video id="liveVideo" playsinline muted autoplay></video>
         <div id="editHint" class="hint hidden"></div>
       </div>
@@ -81,10 +81,10 @@
       <section class="panel echo">
         <div class="panel-h"><h2>Echo Show card <small>simulated Alexa+ add-on</small></h2></div>
         <div class="show">
-          <div id="statusBig" class="status unknown">UNKNOWN</div>
+          <div id="statusBig" class="status unknown" role="status" aria-live="polite">UNKNOWN</div>
           <div class="eta"><span id="etaText">No delivery inbound</span></div>
           <div id="reasonText" class="reason">—</div>
-          <div class="speech"><span class="ring-light"></span><p id="speechText">“Alexa” lines appear here.</p></div>
+          <div class="speech"><span class="ring-light" aria-hidden="true"></span><p id="speechText" aria-live="polite">“Alexa” lines appear here.</p></div>
           <div id="promptBox" class="prompt hidden">
             <p id="promptQ"></p>
             <div><button id="yesBtn" class="primary">Yes</button><button id="noBtn">No</button><button id="micBtn" class="hidden" title="Answer by voice (browser speech recognition)">🎤 Say it</button></div>
