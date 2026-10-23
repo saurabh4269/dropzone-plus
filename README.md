@@ -159,6 +159,30 @@ flowchart LR
 
 The `public/core/*` modules are pure ES modules shared by the browser, the server and the tests. That's why the same logic runs as a static site (GitHub Pages: PWA demo home and replay demo) and against live Ring.
 
+## 3D simulation (physical scene)
+
+![3D simulation: fixed Ring camera view and drone down-looking camera side by side](docs/sim-preview.gif)
+
+**Live:** https://saurabh4269.github.io/dropzone-plus/sim/ (labelled "SIMULATED 3D SCENE")
+
+A three.js backyard (vendored in `public/vendor/three/`, MIT): lawn, fence, a house wall with a pet door, a 10×10 ft drop zone and a pool just outside it. A dog walks into the zone ~30 s before arrival, a kid crosses near T−60 s, and a drone approaches, hovers when advised, descends with visible downwash and releases a box. You can play, pause and scrub the timeline at 1× or 4×, and every run is deterministic. Two cameras render side by side:
+
+- **(a) Fixed Ring camera**: on the house wall, 2.4 m up, 110° lens. Every simulated second its detections go to the **real** `evaluateZone`, then the **real** `buildAdvisory` (HOLD / NO_ADVISORY), which drives the simulated drone.
+- **(b) Drone down-looking camera**: 60° FOV from ~13 ft, active only on the final approach. This is a drone-side "safe to drop" check in the style of OpenLander / MDPI Drones 8(1):21.
+
+After the drop, the **real** `findNewObject` runs on rendered 160×90 Ring frames and produces the receipt (in zone, or next to the pool). Scenarios: dog + kid, pool + downwash gust, and a stale survey (patio umbrella). The simulated parts are the actors, the "detector" (3D boxes projected into each camera, no occlusion or misses) and the carrier. `node scripts/render-sim.mjs` checks all three outcomes in headless Chrome and rebuilds the GIF. We also ran OpenLander's published ONNX model on the rendered drone views (see the comparison).
+
+| | Drone-side vision (OpenLander, MDPI Drones 8(1):21) | Fixed home camera (DropZone+) |
+|---|---|---|
+| Sees the zone | Final seconds, from ~13 ft | Continuously, minutes ahead |
+| Dog walks in 30 s before | Abort at the last moment, wasted trip | Early alert, pet door, HOLD, then drop |
+| Pool just outside the drop point | Outside its field of view | Owner-marked hazard: audit + receipt |
+| Umbrella added after the map was made | Abort on arrival | Seen now, fixable before launch |
+| Last ~2 s, unseen areas, homes without cameras | **Wins** | Can't help |
+| Authority | Authoritative | Veto-only (HOLD or nothing) |
+
+Full comparison and sources: [docs/COMPARISON.md](docs/COMPARISON.md).
+
 ## Run it
 
 Requirements: Node ≥ 20. There are no runtime dependencies (`@aws-sdk/client-bedrock-runtime` is optional).

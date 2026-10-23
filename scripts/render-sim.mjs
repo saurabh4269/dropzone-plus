@@ -85,12 +85,12 @@ if (!checkOnly && !failed) {
   execFileSync('python3', ['-I', '-c', `
 import glob, sys
 from PIL import Image
-files = sorted(glob.glob(sys.argv[1] + '/*.png'))
+files = [f for i, f in enumerate(sorted(glob.glob(sys.argv[1] + '/*.png'))) if i % 3 != 2]  # keep < 4 MB
 frames = []
 for f in files:
-    im = Image.open(f).convert('RGB')
+    im = Image.open(f).convert('RGB').crop((0, 0, 1500, 636))  # header + the two camera views
     im = im.resize((960, round(im.height * 960 / im.width)), Image.LANCZOS)
-    frames.append(im.quantize(colors=128, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE))
+    frames.append(im.quantize(colors=64, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE))
 frames[0].save(sys.argv[2], save_all=True, append_images=frames[1:], duration=100, loop=0, optimize=True)
 `, dir, join(root, 'docs/sim-preview.gif')], { stdio: 'inherit' });
   console.log(`GIF: docs/sim-preview.gif (${n} frames)`);
