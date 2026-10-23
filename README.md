@@ -35,6 +35,24 @@ A Ring camera has watched that same patch of ground for months. It knows the dog
 
 Three replay scenarios show the whole flow: **dog in the zone, then a kid at T−1 min** (consent, pet door, HOLD, drop), **camera can't see** (UNKNOWN is never shown as CLEAR), and **pool next to the drop point** (audit warning, then a receipt showing the box by the pool).
 
+## The app (PWA)
+
+The homeowner app lives at [`/app/`](https://saurabh4269.github.io/dropzone-plus/app/). It's an installable PWA (manifest, icons, offline shell via a service worker) designed for a phone at 390 px, with a bottom tab bar and large tap targets. It follows the system dark/light theme.
+
+| Step | What the user does | Grounded in |
+|---|---|---|
+| **Welcome** | Three-line value pitch. "What is DropZone+?" links to the website. | Ring UX design guide: skippable first-visit tutorial, plain language |
+| **Connect Ring** | **Link Ring account** (Partner-Initiated OAuth 2.0), or **Ring Developer Playground token**, or **Try a demo home** (simulated). Linking is explained *before* any redirect, and a confirmation screen follows. | Ring docs: Partner-Initiated OAuth 2.0 (PKCE S256, `state`, scope `ava.v1:read`, token exchange, `PATCH /v1/accounts/me/app-integrations {status: completed}`), [`lib/oauth.js`](lib/oauth.js). Ring calls are server-to-server, because the docs say browsers are blocked by CORS. |
+| **Pick a camera** | Cameras are listed by their user-assigned name with an online/offline dot. Offline cameras are shown dimmed with an explanation. The empty state points to the Ring app. | UX guide: "Displaying connected Ring devices" (never show raw IDs, don't hide offline devices) |
+| **Permissions** | Phone notifications, the Alexa heads-up (simulated Alexa+ add-on) and the smart pet door (simulated). | |
+| **Mark the drop spot** | Drag the four corners of the zone on a live camera snapshot (or drag the whole zone). Name it ("Back lawn" presets) and describe it in words ("left of the shed, away from the pool"). Mark a pool or hazard, see the audit, and accept a suggested safer spot. Save, and add more zones later with one as the default, like saved addresses in a delivery app. | `public/core/zone.js` audit and suggestion |
+| **Home** | Next drone: live CLEAR / NOT CLEAR / UNKNOWN hero, ETA, Alexa line, a one-tap Yes/Not now for the pet door, and HOLD state. Camera tile with **Check now** and **Live view** (WHEP with a Ring token, simulated in the demo). | Engine, advisory, change detection |
+| **Deliveries** | History with a proof-of-drop photo, where the box landed (before/after change detection) and how many holds were requested. | `public/core/changes.js` |
+| **Partners** | Link drone delivery partners. These are **fictional example partners, labelled simulated**. Each has a "learn more" sheet listing exactly what they get (HOLD / NO_ADVISORY plus reason codes and validity) and what they never get (video, photos, identities, any "safe to land"). Pick which zone each partner uses, optionally share your zone description as drop instructions, and unlink. | Advisory contract |
+| **Settings** | Ring connection (change camera, disconnect), notification and helper toggles, theme, plain-language privacy, **delete all my data**, replay the tour, links to the website and the judge demo. | UX guide: data deletion in-app, notification controls |
+
+Data stays on the device (`localStorage`). On static hosting (GitHub Pages) there's no backend, so the app offers the demo home. Run `npm start` locally to use a Playground token or, with partner credentials, real account linking.
+
 ## Safety and policy design
 
 This design follows the Ring Program Requirements.
@@ -106,7 +124,10 @@ Requirements: Node ≥ 20. There are no runtime dependencies (`@aws-sdk/client-b
 
 ```bash
 git clone https://github.com/saurabh4269/dropzone-plus && cd dropzone-plus
-npm test                 # 16 unit tests: zone logic, veto-only advisory, consent, full delivery window
+npm test                 # 36 tests: zone logic, veto-only advisory, consent, every replay scenario, change detection,
+                         #   OAuth/PKCE, HMAC webhooks, and LIVE-mode integration against ring-partner-sandbox (if present)
+npm run e2e              # headless Chrome: landing, demo scenarios (needs local Chrome)
+npm run e2e:app          # headless Chrome at 390x844: full PWA journey, onboarding to proof of drop
 npm start                # http://localhost:8787  → REPLAY mode (no token needed)
 ```
 
@@ -152,8 +173,17 @@ Tools: `get_dropzone_status`, `get_carrier_advisory`.
 
 - **No carrier integration exists.** The carrier side is a simulation of a contract we'd propose to operators. The household-facing value (bring the dog in, fix your zone, proof of where the box landed) doesn't depend on any carrier.
 - **Camera coverage.** A front doorbell sees a driveway or front-yard drop zone (Wing offers driveway drops). Backyard zones need a backyard camera.
-- **Vision is a general detector (COCO-SSD).** Hazards like water are marked once by the owner rather than inferred from pixels. There's no "package" class, so live proof-of-drop attaches the Ring snapshot for the owner to check.
+- **Vision is a general detector (COCO-SSD).** Hazards like water are marked once by the owner rather than inferred from pixels. Proof of drop doesn't need a "package" class: it compares frames from before and after the drop (change detection near the zone).
+- **Account linking needs Ring partner credentials.** The Partner-Initiated OAuth flow is implemented and unit-tested against the documented parameters, but hackathon entrants don't get a `client_id`, so it hasn't run against Ring. The Playground token and the demo home are the working paths.
 - **Playground limits:** one simulated device, a 30-minute token with no refresh, and no webhooks. See [FRICTION.md](FRICTION.md).
+
+## References we used
+
+- Ring Partner API documentation (API reference, Partner-Initiated OAuth 2.0, App Integrations, WHEP, image snapshots, webhooks): https://developer.amazon.com/docs/ring/api-documentation.html
+- Ring "Your App Design Guide for Ring Customer Experiences": https://developer.amazon.com/docs/ring/ux-design-guide.html (onboarding, device display, data deletion checklist)
+- Ring Program Requirements and Content Policy (2.4, 2.8, data minimisation)
+- Official starter **AmazonAppDev/ring-api-helloworld** (auth modes, WHEP proxy pattern, webhook route): https://github.com/AmazonAppDev/ring-api-helloworld
+- Hackathon forum answers on Playground replay mode, self-written simulators and "simulated Alexa+ add-on" wording (threads 45462, 45511, 45541)
 
 ## Licence and credits
 

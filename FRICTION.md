@@ -81,6 +81,13 @@ Machine and date: Linux, Node 22, 23 Oct 2026 (IST).
 
 ---
 
+### 12. A partner PWA can't call Ring from the browser, and account linking can't be tried without partner credentials (Docs, Med)
+- **Task:** build the homeowner app as an installable PWA with a real "Connect Ring" step.
+- **Expected:** a way for a hackathon entrant to exercise the Partner-Initiated OAuth flow (sandbox `client_id`, Playground OAuth client).
+- **Actual:** the docs say every request to `api.amazonvision.com` and `oauth.ring.com` must be server-to-server, because browsers are blocked by CORS. The OAuth flow needs a `client_id`, `client_secret` and registered redirect URI issued during partner onboarding, which the Playground doesn't provide.
+- **Workaround:** the PWA talks to the DropZone+ backend. `lib/oauth.js` implements the documented flow (PKCE S256, `state`, `ava.v1:read`, code exchange, `PATCH app-integrations`) and is unit-tested with a fake token endpoint. The onboarding offers a Playground-token fallback and a labelled demo home.
+- **Suggestion:** give Playground users a sandbox OAuth client with a localhost redirect URI, so the real linking UX can be built and judged.
+
 ## Feature requests
 
 | Request | Why it matters | Priority |
