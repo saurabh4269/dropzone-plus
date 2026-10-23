@@ -116,11 +116,26 @@ The camera footer should read "detector: Amazon Bedrock …". A project can win 
   - Detector vendored (no CDN).
   - 36 unit and integration tests plus two headless-Chrome end-to-end suites.
   - Ring UX design guide followed: device names, offline state, empty states, a skippable tutorial, in-app data deletion.
-- **Built with (add):** Progressive Web App (Web App Manifest, Service Worker), OAuth 2.0 PKCE, WebRTC/WHEP, TensorFlow.js (vendored), Canvas change detection, three.js only if the 3D sim section is in the README.
+- **Built with (add):** Progressive Web App (Web App Manifest, Service Worker), OAuth 2.0 PKCE, WebRTC/WHEP, TensorFlow.js (vendored), Canvas change detection, three.js (3D simulation).
 - **Testing instructions:** "Open https://saurabh4269.github.io/dropzone-plus/app/ on a phone or narrow window, then choose Try a demo home (simulated) → Backyard Cam → Continue → drag the zone → Save → Link a delivery partner → SkyHop Air (example) → Link → Home → Simulate a drone delivery → tap Yes. For scripted scenarios use /demo.html."
 - **Friction log:** now 14 complete entries.
 - **Open Source entry:** ring-partner-sandbox v0.2.1 (record/replay fixtures, composite GitHub Action, examples, API coverage table, 33 tests).
 - **Video:** consider a 20 s PWA segment (onboarding → mark zone → simulated delivery) before the replay demo.
+
+## Playground run (real Ring Developer Playground)
+- **Status at 21:55 IST:** **not yet run against the real Playground.** No token was available on this machine (`/workspace/secrets/ring-playground.env` did not exist). Run `npm run playground` with your token and paste the output here.
+- **Dry run against ring-partner-sandbox** (`RING_API_BASE=http://127.0.0.1:8686 RING_ACCESS_TOKEN=sandbox-token npm run playground`): **8 PASS · 0 FAIL · 1 SKIP.**
+  - Passed: users/me, devices, status, capabilities, history, snapshot via 303, the PWA snapshot verdict, and the advisory.
+  - Skipped: WHEP, because the mock can't stream video. The real Playground is the only way to verify WHEP plus live-frame detection.
+
+## 3D simulation (added in round 3)
+- https://saurabh4269.github.io/dropzone-plus/sim/: a three.js scene (vendored r170, MIT) with a fixed Ring camera view, a drone down-looking camera at about 13 ft, and an overview.
+  - The real `evaluateZone`, `buildAdvisory` and `findNewObject` run on the projected scene.
+  - Three scenarios: dog + kid, pool + gust, and an umbrella (stale survey: 3 holds, then the drone's own check aborts).
+- [docs/COMPARISON.md](docs/COMPARISON.md) compares drone-side vision (OpenLander, MIT; MDPI Drones 8(1):21, Alsawy et al.) with the fixed home camera. The two are complementary.
+  - The OpenLander ONNX model was smoke-tested offline on rendered drone views (umbrella: 38% obstacle; clear zone: 97.5% clear). That's a smoke test, not an evaluation, and the inference scripts aren't in the repo.
+  - mdpi.com returned 403, so the comparison describes only the abstract (via Crossref).
+- Video idea: 15 s of `/sim/` showing the umbrella case, where only one of the two cameras knows.
 
 ## Open source (separate repo)
 - **https://github.com/saurabh4269/ring-partner-sandbox** (MIT, public, 23 tests). It's a local mock of the Ring Partner API with JSON:API shapes, the Bearer/`User-Agent`/`Hardware_Id` 406 rules, the 303 snapshot flow, and history with an `event_types` filter. It also includes a signed v1.1 webhook simulator covering all 10 event types, timed scenarios that keep history and webhooks consistent, and a verifier library (JS and Python) with middleware.
