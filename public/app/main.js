@@ -110,11 +110,11 @@ function drawDemoYard(ctx, { withActors = true, packageAt = null } = {}) {
 /** A still frame of the camera: { img (canvas|Image), observedAt, readable, reason, source } */
 async function grabFrame(cameraId = S().camera?.id) {
   if (isDemo()) {
-    if (cameraId === 'demo-front') return { readable: false, reason: 'This camera is offline.', observedAt: Date.now(), source: 'demo' };
+    if (cameraId === 'demo-front') return { readable: false, reason: 'This camera is offline.', observedAt: dNow(), source: 'demo' };
     await yardReady;
     const c = Object.assign(document.createElement('canvas'), { width: W, height: H });
     drawDemoYard(c.getContext('2d'), { packageAt: delivery.droppedAt ? delivery.dropPoint : null });
-    return { img: c, observedAt: Date.now(), readable: true, source: 'demo' };
+    return { img: c, observedAt: dNow(), readable: true, source: 'demo' };
   }
   if (liveFrame?.video?.videoWidth) { // live WHEP stream running: analyse the current frame (always fresh)
     const v = liveFrame.video;
