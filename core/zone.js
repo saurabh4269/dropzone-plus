@@ -24,6 +24,7 @@ export const REASON = {
 export const DEFAULTS = Object.freeze({
   minScore: 0.45,        // detector confidence floor
   nearMargin: 0.06,      // "near the zone" buffer, fraction of frame width
+  overCoverage: 0.25,    // an object hiding >= 25% of the zone blocks it even if its feet are elsewhere
   ttlSec: 90,            // a verdict expires after this long
   maxFrameAgeSec: 120,   // frames older than this cannot produce CLEAR
 });
@@ -60,6 +61,20 @@ export function distanceToPolygon(pt, poly) {
 export function footprint(box) {
   const [x, y, w, h] = box;
   return [x + w / 2, y + h];
+}
+
+/** Fraction of the zone covered by a box (grid sampling; cheap and good enough at frame scale). */
+export function zoneCoverage(box, poly, n = 12) {
+  const xs = poly.map((p) => p[0]), ys = poly.map((p) => p[1]);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  let inZone = 0, covered = 0;
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    const pt = [x0 + ((i + 0.5) / n) * (x1 - x0), y0 + ((j + 0.5) / n) * (y1 - y0)];
+    if (!pointInPolygon(pt, poly)) continue;
+    inZone++;
+    if (pt[0] >= box[0] && pt[0] <= box[0] + box[2] && pt[1] >= box[1] && pt[1] <= box[1] + box[3]) covered++;
+  }
+  return inZone ? covered / inZone : 0;
 }
 
 export function polygonCentroid(poly) {
@@ -99,12 +114,12 @@ export function evaluateZone({ detections = [], zone, observedAt, now = Date.now
     if (!category || (d.score ?? 1) < o.minScore) continue;
     const fp = footprint(d.box);
     const dist = distanceToPolygon(fp, zone);
-    const where = dist === 0 ? 'in' : dist <= o.nearMargin ? 'near' : 'outside';
+    const where = dist === 0 ? 'in' : zoneCoverage(d.box, zone) >= o.overCoverage ? 'over' : dist <= o.nearMargin ? 'near' : 'outside';
     base.objects.push({ label: d.label, category, score: round(d.score ?? 1), box: d.box.map(round), where });
   }
 
   // People and pets near the edge count (they move); static objects only count if inside.
-  const blocking = base.objects.filter((ob) => ob.where === 'in' || (ob.where === 'near' && (ob.category === 'person' || ob.category === 'pet')));
+  const blocking = base.objects.filter((ob) => ob.where === 'in' || ob.where === 'over' || (ob.where === 'near' && (ob.category === 'person' || ob.category === 'pet')));
   if (blocking.length) {
     const seen = new Set();
     for (const ob of blocking) {

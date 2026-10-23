@@ -37,6 +37,7 @@ function newSession() {
   $('promptBox').classList.add('hidden');
   $('speechText').textContent = '“Alexa” lines appear here.';
   app.receiptPending = false;
+  app._lastStatus = null;
   renderAudit();
 }
 
@@ -107,6 +108,7 @@ function observe({ detections, media = { readable: true }, observedAt, source, s
   const v = evaluateZone({ detections, zone: app.zone, observedAt, now: now(), media, source });
   v.scripted = scripted;
   app.session.observe(v);
+  if (app._photoPending) { app._photoPending = false; app.session.startDelivery({ etaAt: Date.now() + 8 * 60000, carrier: 'Simulated carrier' }); }
   $('srcLabel').textContent = `source: ${source}`;
   $('obsLabel').textContent = `observed: ${observedAt ? fmtTime(observedAt) : '—'} · expires ${v.stale_after ? fmtTime(Date.parse(v.stale_after)) : '—'}`;
   $('detLabel').textContent = `detector: ${scripted ? 'scripted (replay, not a model)' : source === 'replay' ? '—' : 'COCO-SSD in browser'}`;
@@ -290,7 +292,7 @@ async function ringSnapshot() {
 }
 
 function loadImg(url) {
-  return new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = url; });
+  return new Promise((ok, bad) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => ok(i); i.onerror = () => bad(new Error('could not load image')); i.src = url; });
 }
 
 async function startLive() {
@@ -387,7 +389,7 @@ function wire() {
     app.playing = false; $('playBtn').textContent = '▶ Play';
     stopLive();
     const img = await loadImg(URL.createObjectURL(f));
-    app.view = 'image';
+    photoSession();
     const v = await analyseImage(img, { label: 'Your photo · real detection', observedAt: Date.now(), source: 'upload' });
     onEvent('ring', { text: `Photo analysed in-browser: ${v.objects.length} object(s) found → ${v.status}` });
     e.target.value = '';
@@ -408,6 +410,26 @@ function wire() {
     const r = await ringSnapshot();
     app.session.recordDrop({ packageBox: null, observedAt: r?.observedAt || Date.now(), snapshotUrl: r?.url, source: 'ring-snapshot' });
   };
+}
+
+// A photo test gets its own session (real clock, drone 8 min out) so Alexa reacts to the photo's verdict.
+function photoSession() {
+  app.view = 'image';
+  if (app.mode !== 'replay') return;
+  app.playing = false; $('playBtn').textContent = '▶ Play';
+  newSession();
+  $('doorText').textContent = 'normal';
+  app._photoPending = true;
+}
+
+// ?photo=<image url> runs the real detector on any CORS-readable image (handy for demos and tests).
+async function analysePhotoUrl(url) {
+  try {
+    const img = await loadImg(url);
+    photoSession();
+    const v = await analyseImage(img, { label: 'Photo · real detection', observedAt: Date.now(), source: 'upload' });
+    onEvent('ring', { text: `Photo analysed in-browser: ${v.objects.length} object(s) → ${v.status}` });
+  } catch (e) { onEvent('ring', { text: 'Photo failed: ' + e.message }); }
 }
 
 async function discover() {
@@ -466,6 +488,7 @@ async function boot() {
     if (q.has('speed')) { app.speed = Number(q.get('speed')) || 10; $('speedSel').value = String(app.speed); }
     if (q.has('seek')) seek(Number(q.get('seek')));
     if (q.has('autoplay')) { app.playing = true; $('playBtn').textContent = '⏸ Pause'; }
+    if (q.get('photo')) analysePhotoUrl(q.get('photo'));
   }
   connectEvents();
   requestAnimationFrame(loop);
