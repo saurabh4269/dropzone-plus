@@ -8,7 +8,9 @@
   :root { --bg: #f5f7fa; --panel: #ffffff; --line: #dde3ea; --ink: #121821; --mute: #5d6b7c;
     --ring: #0a84d6; --ok: #138a4f; --bad: #d92d20; --unk: #b7791f; --hold: #c4580e;
     --btn: #ffffff; --bar: #ffffff; --soft: #eef2f6; --code: #f0f3f7; --row: #e8edf2; --on-ring: #ffffff; color-scheme: light; }
-  .badge.sim { background: #fff4d6; color: #7a5200; border-color: #f0d58a; }
+  :root .badge.sim { background: #fff4d6; color: #7a5200; border-color: #f0d58a; }
+  :root .badge.live { background: #e3f2fd; color: #0a5a86; border-color: #a9d4f2; }
+  :root .badge.policy { background: #e6f6ec; color: #17663a; border-color: #b5e0c4; }
   .panel { box-shadow: 0 1px 2px rgba(16,24,40,.05); }
 }
 * { box-sizing: border-box; }
