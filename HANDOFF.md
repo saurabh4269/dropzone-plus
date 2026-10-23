@@ -106,6 +106,20 @@ The camera footer should read "detector: Amazon Bedrock …". A project can win 
     - *Used for:* hosting the replay demo.
     - *What needs work:* an OAuth token without `workflow` scope can't push an Actions workflow, so we deploy from a branch.
 
+### 5. Devpost text: what to update after round 3
+- **Links:** add the **App (PWA)** link https://saurabh4269.github.io/dropzone-plus/app/ first, then the judge demo https://saurabh4269.github.io/dropzone-plus/demo.html and the website https://saurabh4269.github.io/dropzone-plus/. Root URLs with old `?scenario=` parameters still redirect to the demo.
+- **What it does:** lead with the homeowner journey: install → connect Ring → mark and name your drop spot → link a drone partner → heads-up, HOLD and proof of drop. Then mention the zone audit with its suggested safer spot, and proof of drop by before/after change detection.
+- **How we built it:**
+  - Ring account linking implemented per the docs (Partner-Initiated OAuth 2.0 with PKCE). Say plainly that it's untested against Ring because entrants get no partner credentials, and that a Playground token works.
+  - Detector vendored (no CDN).
+  - 36 unit and integration tests plus two headless-Chrome end-to-end suites.
+  - Ring UX design guide followed: device names, offline state, empty states, a skippable tutorial, in-app data deletion.
+- **Built with (add):** Progressive Web App (Web App Manifest, Service Worker), OAuth 2.0 PKCE, WebRTC/WHEP, TensorFlow.js (vendored), Canvas change detection, three.js only if the 3D sim section is in the README.
+- **Testing instructions:** "Open https://saurabh4269.github.io/dropzone-plus/app/ on a phone or narrow window, then choose Try a demo home (simulated) → Backyard Cam → Continue → drag the zone → Save → Link a delivery partner → SkyHop Air (example) → Link → Home → Simulate a drone delivery → tap Yes. For scripted scenarios use /demo.html."
+- **Friction log:** now 14 complete entries.
+- **Open Source entry:** ring-partner-sandbox v0.2.1 (record/replay fixtures, composite GitHub Action, examples, API coverage table, 33 tests).
+- **Video:** consider a 20 s PWA segment (onboarding → mark zone → simulated delivery) before the replay demo.
+
 ## Open source (separate repo)
 - **https://github.com/saurabh4269/ring-partner-sandbox** (MIT, public, 23 tests). It's a local mock of the Ring Partner API with JSON:API shapes, the Bearer/`User-Agent`/`Hardware_Id` 406 rules, the 303 snapshot flow, and history with an `event_types` filter. It also includes a signed v1.1 webhook simulator covering all 10 event types, timed scenarios that keep history and webhooks consistent, and a verifier library (JS and Python) with middleware.
 - It addresses exactly what the Playground lacks (a 30-minute token, no webhooks). DropZone+'s live mode was tested end to end against it: discovery, status, capabilities, history, snapshot, then COCO-SSD scoring and a signed webhook that triggers a re-check.
