@@ -3,12 +3,26 @@
   --accent: #1aa3ff; --accent-ink: #03141f; --ok: #2fbf71; --bad: #ff5a4f; --unk: #f0b429; --hold: #ff8a3d;
   --radius: 16px; --tap: 48px;
   --safe-b: env(safe-area-inset-bottom, 0px); --safe-t: env(safe-area-inset-top, 0px);
+  --hero-clear: linear-gradient(135deg, #1f8f55, #156b40); --hero-clear-ink: #fff; --hero-clear-line: transparent;
+  --hero-bad: linear-gradient(135deg, #d8453c, #a52a22); --hero-bad-ink: #fff; --hero-bad-line: transparent;
+  --hero-unk: linear-gradient(135deg, #b98a10, #8a6406); --hero-unk-ink: #fff; --hero-unk-line: transparent;
+  --scrim: rgba(0, 0, 0, .5); --toast-bg: var(--ink); --toast-ink: var(--bg); --toast-line: transparent; --shadow: none;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) { --bg: #f5f7fa; --surface: #ffffff; --surface-2: #eef2f6; --line: #dde3ea; --ink: #121821; --mute: #5d6b7c; --accent: #0a84d6; --accent-ink: #fff; color-scheme: light; }
+  :root:not([data-theme="dark"]) { --bg: #f5f7fa; --surface: #ffffff; --surface-2: #eef2f6; --line: #dde3ea; --ink: #121821; --mute: #5d6b7c; --accent: #0a84d6; --accent-ink: #fff; color-scheme: light;
+    --ok: #138a4f; --bad: #d92d20; --unk: #b7791f; --hold: #c4580e;
+    --hero-clear: #e7f6ee; --hero-clear-ink: #0f5c36; --hero-clear-line: #a9dcbf;
+    --hero-bad: #fdecea; --hero-bad-ink: #a2231a; --hero-bad-line: #f3b7b1;
+    --hero-unk: #fff4d6; --hero-unk-ink: #7a5200; --hero-unk-line: #f0d58a;
+    --scrim: rgba(16, 24, 40, .32); --toast-bg: #ffffff; --toast-ink: #121821; --toast-line: #dde3ea; --shadow: 0 8px 24px rgba(16, 24, 40, .14); }
 }
-:root[data-theme="light"] { --bg: #f5f7fa; --surface: #ffffff; --surface-2: #eef2f6; --line: #dde3ea; --ink: #121821; --mute: #5d6b7c; --accent: #0a84d6; --accent-ink: #fff; color-scheme: light; }
+:root[data-theme="light"] { --bg: #f5f7fa; --surface: #ffffff; --surface-2: #eef2f6; --line: #dde3ea; --ink: #121821; --mute: #5d6b7c; --accent: #0a84d6; --accent-ink: #fff; color-scheme: light;
+    --ok: #138a4f; --bad: #d92d20; --unk: #b7791f; --hold: #c4580e;
+    --hero-clear: #e7f6ee; --hero-clear-ink: #0f5c36; --hero-clear-line: #a9dcbf;
+    --hero-bad: #fdecea; --hero-bad-ink: #a2231a; --hero-bad-line: #f3b7b1;
+    --hero-unk: #fff4d6; --hero-unk-ink: #7a5200; --hero-unk-line: #f0d58a;
+    --scrim: rgba(16, 24, 40, .32); --toast-bg: #ffffff; --toast-ink: #121821; --toast-line: #dde3ea; --shadow: 0 8px 24px rgba(16, 24, 40, .14); }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
@@ -64,6 +78,8 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 .item .chev { color: var(--mute); font-size: 22px; }
 .badge { font-size: 12px; font-weight: 650; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
 .badge.sim { color: #b88400; border-color: #b8840066; background: #f0b42914; }
+:root[data-theme="light"] .badge.sim { color: #7a5200; border-color: #f0d58a; background: #fff4d6; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .badge.sim { color: #7a5200; border-color: #f0d58a; background: #fff4d6; } }
 .badge.ok { color: var(--ok); border-color: #2fbf7155; }
 .badge.live { color: var(--accent); border-color: #1aa3ff55; }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--mute); flex: none; }
@@ -71,9 +87,9 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 
 /* status */
 .status-hero { border-radius: var(--radius); padding: 18px; color: #fff; margin-bottom: 14px; position: relative; overflow: hidden; }
-.status-hero.CLEAR { background: linear-gradient(135deg, #1f8f55, #156b40); }
-.status-hero.NOT_CLEAR { background: linear-gradient(135deg, #d8453c, #a52a22); }
-.status-hero.UNKNOWN { background: linear-gradient(135deg, #b98a10, #8a6406); }
+.status-hero.CLEAR { background: var(--hero-clear); color: var(--hero-clear-ink); border: 1px solid var(--hero-clear-line); }
+.status-hero.NOT_CLEAR { background: var(--hero-bad); color: var(--hero-bad-ink); border: 1px solid var(--hero-bad-line); }
+.status-hero.UNKNOWN { background: var(--hero-unk); color: var(--hero-unk-ink); border: 1px solid var(--hero-unk-line); }
 .status-hero.IDLE { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
 .status-hero .k { font-size: 13px; opacity: .85; text-transform: uppercase; letter-spacing: .6px; }
 .status-hero .v { font-size: 32px; font-weight: 800; letter-spacing: .5px; margin: 2px 0; }
@@ -122,10 +138,10 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 .empty .big { font-size: 40px; }
 
 /* sheet + toast */
-.sheet { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+.sheet { position: fixed; inset: 0; background: var(--scrim); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
 .sheet-card { width: min(560px, 100%); max-height: 88dvh; overflow: auto; background: var(--surface); border-radius: 20px 20px 0 0; padding: 8px 18px calc(18px + var(--safe-b)); }
 .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 6px auto 14px; }
-.toast { position: fixed; left: 50%; bottom: calc(76px + var(--safe-b)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; z-index: 30; font-size: 14px; max-width: 90vw; }
+.toast { position: fixed; left: 50%; bottom: calc(76px + var(--safe-b)); transform: translateX(-50%); background: var(--toast-bg); color: var(--toast-ink); border: 1px solid var(--toast-line); box-shadow: var(--shadow); padding: 10px 16px; border-radius: 12px; z-index: 30; font-size: 14px; max-width: 90vw; }
 pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; background: var(--surface-2); border-radius: 10px; padding: 10px; }
 ul.plain { padding-left: 18px; margin: 6px 0 10px; }
 ul.plain li { margin: 4px 0; }

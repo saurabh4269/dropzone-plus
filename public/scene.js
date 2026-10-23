@@ -1,9 +1,30 @@
-// Canvas drawing: the simulated yard (replay), plus overlays used in every mode
+// Canvas drawing: the replay yard, plus overlays used in every mode
 // (drop zone, hazards, detection boxes, drone, package).
 
 export const W = 1280, H = 720;
 
-export function drawYard(ctx) {
+// Replay imagery: one fixed backyard camera angle (day and dusk-with-lights) plus cut-out sprites.
+// Generated images, see assets/yard/CREDITS.md. Until they load, the drawn yard below is used.
+const ASSET = new URL('./assets/yard/', import.meta.url);
+const IMG = {};
+if (typeof Image !== 'undefined') {
+  for (const k of ['day.jpg', 'dusk-dark.jpg', 'dusk-lit.jpg', 'dog.png', 'kid.png', 'package.png', 'drone.png']) {
+    const i = new Image(); i.decoding = 'async'; i.src = new URL(k, ASSET).href; IMG[k] = i;
+  }
+}
+const ready = (k) => IMG[k]?.complete && IMG[k].naturalWidth > 0;
+/** Resolves once the replay images are loaded (or failed), so the first frame is the photo. */
+export const yardReady = Promise.all(Object.values(IMG).map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; }))));
+
+/** variant: 'day' | 'dusk' (lights off, too dark to read) | 'dusk-lit' (yard lights on) */
+export function drawYard(ctx, variant = 'day') {
+  const key = variant === 'day' ? 'day.jpg' : variant === 'dusk' ? 'dusk-dark.jpg' : 'dusk-lit.jpg';
+  if (ready(key)) return ctx.drawImage(IMG[key], 0, 0, W, H);
+  drawYardFallback(ctx);
+  if (variant !== 'day') { ctx.save(); ctx.fillStyle = variant === 'dusk' ? 'rgba(5,8,25,.82)' : 'rgba(10,14,40,.25)'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+}
+
+function drawYardFallback(ctx) {
   // fence + hedge
   const sky = ctx.createLinearGradient(0, 0, 0, H * 0.3);
   sky.addColorStop(0, '#9fc3d9'); sky.addColorStop(1, '#cfe3ea');
@@ -51,8 +72,20 @@ export function drawCameraChrome(ctx, { label, time, simulated }) {
   }
 }
 
+const SPRITE = { '🐕': ['dog.png', 0.9], '🧒': ['kid.png', 1] };
+function drawSprite(ctx, img, cx, bottom, h, shadowW) {
+  const w = h * img.naturalWidth / img.naturalHeight;
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.filter = 'blur(4px)';
+  ctx.beginPath(); ctx.ellipse(cx, bottom - 2, (shadowW ?? w) * 0.45, h * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  ctx.drawImage(img, cx - w / 2, bottom - h, w, h);
+}
+
 export function drawActor(ctx, emoji, x, y, size) {
   const px = size * H;
+  const sp = SPRITE[emoji];
+  if (sp && ready(sp[0])) return drawSprite(ctx, IMG[sp[0]], x * W, y * H, px * sp[1]);
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x * W, y * H, px * 0.4, px * 0.1, 0, 0, Math.PI * 2); ctx.fill();
   ctx.font = `${px}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
@@ -99,6 +132,12 @@ export function drawDetections(ctx, objects, { scripted }) {
 
 export function drawDrone(ctx, x, y, scale = 1) {
   const cx = x * W, cy = y * H, s = 40 * scale;
+  if (ready('drone.png')) {
+    const img = IMG['drone.png'], w = s * 2.8, h = w * img.naturalHeight / img.naturalWidth;
+    ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.16)'; ctx.filter = 'blur(6px)'; ctx.beginPath(); ctx.ellipse(cx, cy + s * 2.6, s * 1.1, s * 0.25, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
+    return;
+  }
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(cx, cy + s * 2.6, s * 1.1, s * 0.25, 0, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = '#2b2f36'; ctx.lineWidth = 5 * scale;
@@ -111,6 +150,7 @@ export function drawDrone(ctx, x, y, scale = 1) {
 
 export function drawPackage(ctx, x, y) {
   const s = 34;
+  if (ready('package.png')) return drawSprite(ctx, IMG['package.png'], x * W, y * H, 50);
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x * W, y * H, s * 0.8, s * 0.2, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#c8975a'; ctx.fillRect(x * W - s / 2, y * H - s, s, s);

@@ -1,7 +1,7 @@
 import { evaluateZone, freshen, auditZone, suggestZone, polygonCentroid, STATUS } from './core/zone.js';
 import { createSession, PHASE } from './core/engine.js';
 import { SCENARIOS, DEFAULT_ZONE, actorAt, sizeAt, scriptedDetections, scenarioHousehold, replayMedia } from './scenarios.js';
-import { W, H, drawYard, drawCameraChrome, drawActor, drawPolygon, drawDetections, drawDrone, drawPackage, drawUnreadable } from './scene.js';
+import { W, H, yardReady, drawYard, drawCameraChrome, drawActor, drawPolygon, drawDetections, drawDrone, drawPackage, drawUnreadable } from './scene.js';
 import { loadDetector, detect } from './detector.js';
 import { findNewObject } from './core/changes.js';
 
@@ -195,8 +195,10 @@ function dropPoint() {
   return [cx, cy + 0.04];
 }
 
+const yardVariant = () => (app.scn.lowLight ? (app.session?.state?.lights?.mode === 'on' ? 'dusk-lit' : 'dusk') : 'day');
+
 function replayFrame(withPackage) {
-  drawYard(fctx);
+  drawYard(fctx, yardVariant());
   for (const a of app.scn.actors) { const p = actorAt(a, app.simT); if (p) drawActor(fctx, a.emoji, p.x, p.y, sizeAt(a, p.y)); }
   if (withPackage) { const d = dropPoint(); drawPackage(fctx, d[0], d[1]); }
   sctx.drawImage(full, 0, 0, SW, SH);
@@ -227,9 +229,8 @@ function draw() {
   if (app.view === 'scene') {
     if (app.scn.media && !app.scn.media.readable) drawUnreadable(ctx, app.scn.media.reason);
     else {
-      drawYard(ctx);
+      drawYard(ctx, yardVariant());
       for (const a of app.scn.actors) { const p = actorAt(a, app.simT); if (p) drawActor(ctx, a.emoji, p.x, p.y, sizeAt(a, p.y)); }
-      if (app.scn.lowLight) { ctx.save(); ctx.fillStyle = s.lights?.mode === 'on' ? 'rgba(10,14,40,.25)' : 'rgba(5,8,25,.82)'; ctx.fillRect(0, 0, W, H); ctx.restore(); } // simulated dusk
     }
   } else if (app.view === 'video') {
     const vid = $('liveVideo');
@@ -588,6 +589,7 @@ async function boot() {
     newSession();
     discover().then(ringSnapshot);
   } else {
+    await yardReady;
     const q = new URLSearchParams(location.search);
     const scn = q.get('scenario');
     if (scn) $('scenarioSel').value = scn;

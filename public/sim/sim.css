@@ -1,12 +1,12 @@
-:root { color-scheme: dark; --bg: #0d1117; --panel: #161b22; --line: #30363d; --text: #e6edf3; --muted: #8b949e; }
+:root { color-scheme: dark; --bg: #0d1117; --panel: #161b22; --line: #30363d; --text: #e6edf3; --muted: #8b949e; --hold: #ffa657; --ev-alexa: #79c0ff; --ev-drone: #d2a8ff; --ev-ok: #7ee787; --ev-bad: #ff7b72; --link: #58a6ff; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; }
 header { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--bg); z-index: 2; }
 .brand a { color: var(--text); font-weight: 700; font-size: 18px; text-decoration: none; }
-.sim-badge { background: #ffd54a; color: #111; font-weight: 800; padding: 2px 8px; border-radius: 4px; letter-spacing: .04em; margin-left: 6px; }
+.sim-badge { border: 1px solid var(--line); color: var(--muted); font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; letter-spacing: .05em; margin-left: 6px; vertical-align: 2px; }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex: 1; }
 .controls select, .controls button { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font: inherit; cursor: pointer; }
-.controls button.on { background: #1f6feb; border-color: #1f6feb; }
+.controls button.on { background: #1f6feb; border-color: #1f6feb; color: #fff; }
 #scrub { flex: 1; min-width: 200px; }
 #clock { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 260px; }
 main { padding: 12px 16px 40px; }
@@ -20,13 +20,13 @@ main { padding: 12px 16px 40px; }
 .row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
 .row span { color: var(--muted); }
 .small { color: var(--muted); font-size: 12px; }
-.verdict { font-size: 22px; padding: 2px 10px; border-radius: 6px; }
+.verdict { font-size: 22px; padding: 2px 10px; border-radius: 6px; color: #fff; }
 .verdict.CLEAR { background: #238636; } .verdict.NOT_CLEAR { background: #da3633; } .verdict.UNKNOWN { background: #6e7681; }
-#advice.hold { color: #ffa657; }
+#advice.hold { color: var(--hold); }
 #events { margin: 6px 0 0; padding-left: 18px; max-height: 190px; overflow: auto; font-size: 12px; }
-#events li { margin-bottom: 4px; } #events li.alexa { color: #79c0ff; } #events li.carrier { color: #ffa657; } #events li.drone { color: #d2a8ff; } #events li.owner { color: #7ee787; }
+#events li { margin-bottom: 4px; } #events li.alexa { color: var(--ev-alexa); } #events li.carrier { color: var(--hold); } #events li.drone { color: var(--ev-drone); } #events li.owner { color: var(--ev-ok); }
 .receipt { border-top: 1px solid var(--line); padding-top: 8px; }
-.receipt.in_zone #receiptText { color: #7ee787; } .receipt.hazard #receiptText { color: #ff7b72; } .receipt.not_dropped #receiptText { color: #ffa657; }
+.receipt.in_zone #receiptText { color: var(--ev-ok); } .receipt.hazard #receiptText { color: var(--ev-bad); } .receipt.not_dropped #receiptText { color: var(--hold); }
 .thumbs { display: flex; gap: 8px; } .thumbs figure { margin: 0; } .thumbs canvas { width: 160px; image-rendering: pixelated; border: 1px solid var(--line); }
 .thumbs figcaption { font-size: 11px; color: var(--muted); }
 .compare { margin-top: 18px; max-width: 1200px; }
@@ -34,5 +34,11 @@ main { padding: 12px 16px 40px; }
 .compare table { border-collapse: collapse; width: 100%; }
 .compare th, .compare td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 .compare th { background: var(--panel); }
-.compare a { color: #58a6ff; }
+.compare a { color: var(--link); }
 @media (max-width: 900px) { .views { grid-template-columns: 1fr; } }
+@media (prefers-color-scheme: light) {
+  :root { color-scheme: light; --bg: #f5f7fa; --panel: #ffffff; --line: #dde3ea; --text: #121821; --muted: #5b6675;
+    --hold: #c4580e; --ev-alexa: #0b63c5; --ev-drone: #7a3fc4; --ev-ok: #138a4f; --ev-bad: #c4281c; --link: #0b63c5; }
+  .view { background: #e9edf2; }
+  .verdict.CLEAR { background: #138a4f; } .verdict.NOT_CLEAR { background: #d92d20; } .verdict.UNKNOWN { background: #8a94a3; }
+}
