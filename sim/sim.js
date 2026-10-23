@@ -282,7 +282,7 @@ function thumb(canvasId, img) {
 
 function frame() {
   const run = runs[scenario];
-  const step = run.steps[Math.min(run.steps.length - 1, Math.floor(t))];
+  const step = run.steps[Math.max(0, Math.min(run.steps.length - 1, Math.floor(t) || 0))] || run.steps[0];
   const { p, actors } = pose(scenario, t);
   ringR.render(scene, ringCam);
   overR.render(scene, overCam);
@@ -314,7 +314,7 @@ function frame() {
   } else {
     banner(dov, D, 'DRONE DOWN-LOOKING CAMERA · SIMULATED', 'Active only on final approach (≈ 13 ft above the drop point)');
     dov.fillStyle = '#8b949e'; dov.font = '600 18px system-ui, sans-serif';
-    const msg = p < P.HOVER_POINT ? `Not yet over the drop point (${step.phase.toLowerCase()})` : step.aborted ? 'Aborted: leaving with the package' : 'Departed';
+    const msg = p < P.HOVER_POINT ? `Not yet over the drop point (${String(step?.phase || "approaching").toLowerCase()})` : step?.aborted ? 'Aborted: leaving with the package' : 'Departed';
     dov.fillText(msg, 24, D / 2);
   }
   const oo = $('overOv').getContext('2d');
