@@ -133,7 +133,7 @@ flowchart LR
     RC["lib/ring.js<br/>devices · status · history · snapshot · WHEP"]
     OA["lib/oauth.js<br/>PKCE · state · token exchange"]
     WV["lib/webhook.js<br/>HMAC verify · idempotency"]
-    ADV["GET /api/v1/advisory<br/>HOLD | NO_ADVISORY"]
+    ADV["GET /api/v1/advisory<br/>HOLD or NO_ADVISORY"]
     SSE["SSE /api/events"]
   end
   subgraph Client["Browser: PWA /app and judge demo"]
