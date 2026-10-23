@@ -5,7 +5,8 @@
 // 1) Ring Partner API directly: users/me, devices, status, capabilities, history, snapshot (303)
 // 2) The real PWA in headless Chrome against server.js: Check now (snapshot) -> Live view (WHEP) ->
 //    detection on the live frame -> carrier advisory -> live session closed (DELETE).
-// Prints PASS / FAIL / SKIP / INFO per step. Never prints the token. Screenshots: /tmp/dropzone-playground-*.png
+// Prints PASS / FAIL / SKIP / INFO per step, with no dates or clock times (ages and durations only).
+// Never prints the token. Screenshots: /tmp/dropzone-playground-*.png
 import { spawn, execSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +16,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const results = [];
 const log = (status, step, detail = '') => { results.push({ status, step, detail }); console.log(`${status.padEnd(5)} ${step}${detail ? '  · ' + detail : ''}`); };
 const official = RING_API === 'https://api.amazonvision.com';
+const t0 = performance.now();
+// Timestamps become ages ("reported 12 s ago") so the output carries no dates or clock times.
+const ago = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? `${Math.max(0, Math.round((Date.now() - t) / 1000))} s ago` : 'n/a'; };
+const describeAttributes = (a = {}) => Object.entries(a)
+  .map(([k, v]) => (/_at$/.test(k) && typeof v === 'string' ? `${k.replace(/_at$/, '')} ${ago(v)}` : `${k} ${typeof v === 'object' ? JSON.stringify(v) : v}`))
+  .join(', ');
 
 if (!process.env.RING_ACCESS_TOKEN) {
   console.log('Set RING_ACCESS_TOKEN (Ring Developer Playground token: developer.amazon.com/ring/console/playground).');
@@ -34,7 +41,7 @@ try {
   device ? log('PASS', 'GET /v1/devices', `${doc.data.length} device(s); using "${device.name}" (online: ${device.online})`) : log('FAIL', 'GET /v1/devices', 'no devices');
 } catch (e) { log('FAIL', 'GET /v1/devices', `${e.status}`); }
 if (device) {
-  try { const s = await ring.status(device.id); log('PASS', 'GET /v1/devices/{id}/status', JSON.stringify(s?.data?.attributes || {}).slice(0, 60)); } catch (e) { log('FAIL', 'GET status', `${e.status}`); }
+  try { const s = await ring.status(device.id); log('PASS', 'GET /v1/devices/{id}/status', describeAttributes(s?.data?.attributes).slice(0, 60)); } catch (e) { log('FAIL', 'GET status', `${e.status}`); }
   try { const c = await ring.capabilities(device.id); log('PASS', 'GET /v1/devices/{id}/capabilities', Object.keys(c?.data?.attributes || {}).join(', ').slice(0, 70)); } catch (e) { log('FAIL', 'GET capabilities', `${e.status}`); }
   try { const h = await ring.history(device.id, { eventTypes: 'motion,ding,on_demand' }); const n = Array.isArray(h?.data) ? h.data.length : 0; log(n ? 'PASS' : 'INFO', 'GET /v1/history/devices/{id}/events', `${n} event(s)${n ? '' : ' (Playground history is often empty: expected)'}`); } catch (e) { log('INFO', 'GET history', `${e.status} (history is thin in the Playground)`); }
   try {
@@ -104,6 +111,6 @@ if (!device || !chromeBin) {
 }
 
 const fails = results.filter((r) => r.status === 'FAIL').length;
-console.log(`\n${results.filter((r) => r.status === 'PASS').length} pass · ${fails} fail · ${results.filter((r) => r.status === 'SKIP').length} skip · ${results.filter((r) => r.status === 'INFO').length} info`);
+console.log(`\n${results.filter((r) => r.status === 'PASS').length} pass · ${fails} fail · ${results.filter((r) => r.status === 'SKIP').length} skip · ${results.filter((r) => r.status === 'INFO').length} info · ${((performance.now() - t0) / 1000).toFixed(1)} s`);
 writeFileSync('/tmp/dropzone-playground-results.json', JSON.stringify({ at: new Date().toISOString(), target: official ? 'ring-playground' : RING_API, results }, null, 2));
 process.exit(fails ? 1 : 0);
