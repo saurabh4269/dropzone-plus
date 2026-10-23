@@ -1,6 +1,6 @@
 # Vendored third-party files (Apache-2.0)
 
-Bundled so DropZone+ object detection works offline and without any CDN.
+Bundled so DropZone object detection works offline and without any CDN.
 
 | Path | Source | Licence |
 |---|---|---|
