@@ -23,7 +23,7 @@ export function createSprinkler({ onChange, nextRunAt = null, runSeconds = 120 }
     pause({ ownerConsent, until, at }) {
       if (ownerConsent !== true) return { ok: false, error: 'OWNER_CONSENT_REQUIRED' };
       restoreAt = until ?? null;
-      set('paused', 'owner approved via Alexa (simulated)', at);
+      set('paused', 'owner approved via Alexa', at);
       return { ok: true, mode };
     },
     restore(why = 'drone departed', at) {
@@ -33,8 +33,8 @@ export function createSprinkler({ onChange, nextRunAt = null, runSeconds = 120 }
     },
     tick(now = Date.now()) {
       if (mode === 'paused' && restoreAt && now >= restoreAt) this.restore('safety timeout', now);
-      if (mode === 'scheduled' && runAt && now >= runAt) { runEndsAt = runAt + runSeconds * 1000; runAt = null; set('running', 'scheduled run (simulated)', now); }
-      if (mode === 'running' && now >= runEndsAt) set('scheduled', 'scheduled run finished (simulated)', now);
+      if (mode === 'scheduled' && runAt && now >= runAt) { runEndsAt = runAt + runSeconds * 1000; runAt = null; set('running', 'scheduled run', now); }
+      if (mode === 'running' && now >= runEndsAt) set('scheduled', 'scheduled run finished', now);
     },
   };
 }

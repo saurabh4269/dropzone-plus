@@ -135,4 +135,4 @@ ul.plain li { margin: 4px 0; }
 .audit-line.ok { border-left: 3px solid var(--ok); }
 @media (prefers-reduced-motion: no-preference) { .sheet-card { animation: up .18s ease-out; } @keyframes up { from { transform: translateY(30px); opacity: .6; } } }
 
-.pcards{display:grid;gap:12px}.pcard{margin:0}.phead{display:flex;align-items:center;gap:10px;margin-bottom:4px}.phead .badge{margin-left:auto}.plogo{width:32px;height:32px;border-radius:8px;object-fit:contain;background:#fff}.pcard p{margin:0 0 10px}
+.pcards{display:grid;gap:12px}.pcard{margin:0}.phead{display:flex;align-items:center;gap:10px;margin-bottom:4px}.phead .pname{flex:0 1 auto;min-width:0}.pbtn{margin-left:auto;flex:none;min-height:32px;width:auto;padding:6px 14px;font-size:13px;border-radius:999px;line-height:1.2}.phead .badge+.pbtn{margin-left:8px}.phead .badge{margin-left:auto}.plogo{width:32px;height:32px;border-radius:8px;object-fit:contain;background:#fff}.pcard p{margin:0 0 0 42px}

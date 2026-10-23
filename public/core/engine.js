@@ -82,7 +82,7 @@ export function createSession({ zone, hazards = [], household = { hasPetDoor: tr
 
   return {
     state: s,
-    startDelivery({ etaAt, carrier = 'Simulated carrier', ref = 'SIM-' + Math.random().toString(36).slice(2, 8).toUpperCase() }) {
+    startDelivery({ etaAt, carrier = 'Demo carrier', ref = 'SIM-' + Math.random().toString(36).slice(2, 8).toUpperCase() }) {
       s.delivery = { etaAt, originalEtaAt: etaAt, carrier, ref };
       s.phase = PHASE.INBOUND;
       s.holdsIssued = 0;

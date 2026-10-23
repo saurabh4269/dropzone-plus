@@ -118,10 +118,10 @@ function observe({ detections, media = { readable: true }, observedAt, source, s
   const v = evaluateZone({ detections, zone: app.zone, observedAt, now: now(), media, source });
   v.scripted = scripted;
   app.session.observe(v);
-  if (app._photoPending) { app._photoPending = false; app.session.startDelivery({ etaAt: Date.now() + 8 * 60000, carrier: 'Simulated carrier' }); }
+  if (app._photoPending) { app._photoPending = false; app.session.startDelivery({ etaAt: Date.now() + 8 * 60000, carrier: 'Demo carrier' }); }
   $('srcLabel').textContent = `source: ${source}`;
-  $('obsLabel').textContent = `observed: ${observedAt ? fmtTime(observedAt) : '—'} · expires ${v.stale_after ? fmtTime(Date.parse(v.stale_after)) : '—'}`;
-  $('detLabel').textContent = `detector: ${scripted ? 'scripted (replay, not a model)' : !media.readable ? 'none (no readable frame)' : 'COCO-SSD in browser'}`;
+  $('obsLabel').textContent = `observed: ${observedAt ? fmtTime(observedAt) : 'none'} · expires ${v.stale_after ? fmtTime(Date.parse(v.stale_after)) : 'none'}`;
+  $('detLabel').textContent = `detector: ${scripted ? 'replay' : !media.readable ? 'none (no readable frame)' : 'COCO-SSD in browser'}`;
   return v;
 }
 
@@ -152,7 +152,7 @@ function loadScenario(id) {
   $('sprinklerText').textContent = app.scn.sprinklerAtSec ? `scheduled (T−${app.scn.etaSec - app.scn.sprinklerAtSec} s)` : 'scheduled';
   newSession();
   replayObserve();
-  app.session.startDelivery({ etaAt: app.simBase + app.scn.etaSec * 1000, carrier: 'Simulated carrier' });
+  app.session.startDelivery({ etaAt: app.simBase + app.scn.etaSec * 1000, carrier: 'Demo carrier' });
 }
 
 function replayObserve() {
@@ -175,7 +175,7 @@ function replayStep(dt) {
     // Proof of drop: real change detection between the pre-drop and post-drop (simulated) frames.
     const unreadable = app.scn.media && !app.scn.media.readable;
     const r = unreadable || !app.beforeFrame ? { ok: false, reason: unreadable ? 'MEDIA_UNREADABLE' : 'NO_REFERENCE_FRAME' } : findNewObject(app.beforeFrame, replayFrame(true), { zone: app.zone, hazards: app.hazards });
-    app.session.recordDrop({ packageBox: r.ok ? r.box : null, observedAt: now(), source: 'replay (simulated frames)', method: 'change-detection', detail: r.ok ? null : r.reason });
+    app.session.recordDrop({ packageBox: r.ok ? r.box : null, observedAt: now(), source: 'replay', method: 'change-detection', detail: r.ok ? null : r.reason });
   }
   if (app.simT >= app.scn.durationSec) { app.playing = false; $('playBtn').textContent = '▶ Play'; }
 }
@@ -282,7 +282,7 @@ function renderCards() {
   const big = $('statusBig');
   big.textContent = v.status.replace('_', ' ');
   big.className = 'status ' + v.status.toLowerCase();
-  $('reasonText').textContent = v.reasons?.length ? v.reasons.map((r) => r.code.replaceAll('_', ' ').toLowerCase() + (r.label ? ` · ${r.label}` : '') + (r.detail ? ` · ${r.detail}` : '')).join('; ') : v.status === STATUS.CLEAR ? 'nothing in or near the zone' : '—';
+  $('reasonText').textContent = v.reasons?.length ? v.reasons.map((r) => r.code.replaceAll('_', ' ').toLowerCase() + (r.label ? ` · ${r.label}` : '') + (r.detail ? ` · ${r.detail}` : '')).join('; ') : v.status === STATUS.CLEAR ? 'nothing in or near the zone' : '';
   let eta = 'No delivery inbound';
   if (s.delivery) {
     const left = (s.delivery.etaAt - now()) / 1000;
@@ -319,7 +319,7 @@ function renderReceipt(r) {
   const label = { in_zone: 'Landed inside the drop zone', outside_zone: 'Landed OUTSIDE the drop zone', hazard: `Landed next to the ${r.hazard}`, unknown: 'Placement not confirmed: owner to verify' }[r.placement];
   $('receiptBox').innerHTML = `<div class="place ${r.placement}"></div><div class="fine"></div>${r.snapshot ? `<img alt="Ring proof-of-drop snapshot" src="${r.snapshot}">` : ''}<details><summary>receipt JSON</summary><pre></pre></details>`;
   $('receiptBox').querySelector('.place').textContent = label;
-  $('receiptBox').querySelector('.fine').textContent = `ref ${r.delivery_ref} · observed ${r.observed_at ? fmtTime(Date.parse(r.observed_at)) : '—'} · source ${r.source} · holds requested ${r.holds_requested} · located by ${r.method === 'change-detection' ? (r.package_box ? 'before/after change detection' : `change detection: ${(r.detail || '').replaceAll('_', ' ').toLowerCase()}`) : r.method}`;
+  $('receiptBox').querySelector('.fine').textContent = `ref ${r.delivery_ref} · observed ${r.observed_at ? fmtTime(Date.parse(r.observed_at)) : 'none'} · source ${r.source} · holds requested ${r.holds_requested} · located by ${r.method === 'change-detection' ? (r.package_box ? 'before/after change detection' : `change detection: ${(r.detail || '').replaceAll('_', ' ').toLowerCase()}`) : r.method}`;
   $('receiptBox').querySelector('pre').textContent = JSON.stringify(r, null, 2);
 }
 
@@ -393,7 +393,7 @@ async function startLive() {
   if (!res.ok) { onEvent('ring', { text: `WHEP failed: ${j.error}` }); stopLive(); return; }
   app.whepUrl = j.sessionUrl;
   await pc.setRemoteDescription({ type: 'answer', sdp: j.sdpAnswer });
-  onEvent('ring', { text: 'Live view started (WHEP). Sessions are capped at ~30–60 s.' });
+  onEvent('ring', { text: 'Live view started (WHEP). Sessions are capped at about 30 to 60 s.' });
   app.liveTimer = setTimeout(stopLive, 55000);
 }
 
@@ -502,7 +502,7 @@ function wire() {
   $('liveBtn').onclick = () => startLive().catch((e) => onEvent('ring', { text: 'Live view error: ' + e.message }));
   $('frameBtn').onclick = () => analyseImage($('liveVideo'), { label: 'Ring live frame', observedAt: Date.now(), source: 'ring-live' });
   $('orderBtn').onclick = () => {
-    app.session.startDelivery({ etaAt: Date.now() + 3 * 60000, carrier: 'Simulated carrier' });
+    app.session.startDelivery({ etaAt: Date.now() + 3 * 60000, carrier: 'Demo carrier' });
     clearInterval(app.windowTimer);
     app.windowTimer = setInterval(() => { const p = app.session.state.phase; if (p === PHASE.INBOUND || p === PHASE.HOLDING) ringSnapshot(); }, 30000);
     ringSnapshot();
@@ -551,7 +551,7 @@ function connectEvents() {
   const es = new EventSource('./api/events');
   es.addEventListener('ring', (m) => {
     const e = JSON.parse(m.data);
-    onEvent('ring', { text: `Ring webhook ${e.type}${e.sub_type ? ' · ' + e.sub_type : ''}${e.simulated ? ' (simulated, HMAC-verified)' : ' (HMAC-verified)'}` });
+    onEvent('ring', { text: `Ring webhook ${e.type}${e.sub_type ? ' · ' + e.sub_type : ''}${e.simulated ? ' (test event, HMAC-verified)' : ' (HMAC-verified)'}` });
     const p = app.session.state.phase;
     if (app.mode === 'live' && (p === PHASE.INBOUND || p === PHASE.HOLDING)) ringSnapshot(); // event-triggered re-check
   });
