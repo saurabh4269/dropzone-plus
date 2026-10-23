@@ -5,187 +5,416 @@
   <script>
     // Old links (Devpost etc.) used the root URL with demo params; send them to the demo.
     if (/[?&](scenario|seek|photo|replay|autoplay|speed)(=|&|$)/.test(location.search)) location.replace('./demo.html' + location.search + location.hash);
+    document.documentElement.classList.add('js');
+    setTimeout(function () { if (!window.__dzLanding) document.documentElement.classList.remove('js'); }, 3000);
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DropZone · Your Ring camera checks the drone drop zone before the drone arrives</title>
   <meta name="description" content="DropZone uses your Ring camera to check the drone drop zone before the drone arrives. Alexa tells you what is in the way, your pet door, yard lights and sprinkler help clear the spot with your yes, and the carrier gets a HOLD signal before landing." />
-  <meta name="theme-color" content="#0b0e13" media="(prefers-color-scheme: dark)" />
-  <meta name="theme-color" content="#f5f7fa" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="color-scheme" content="light" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" />
   <link rel="stylesheet" href="./landing.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='none' stroke='%231aa3ff' stroke-width='10'/><circle cx='50' cy='50' r='12' fill='%231aa3ff'/></svg>" />
+  <link rel="preload" as="image" href="./assets/yard/day.jpg" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='none' stroke='%230a84d6' stroke-width='10'/><circle cx='50' cy='50' r='12' fill='%230a84d6'/></svg>" />
+  <script type="module" src="./landing.js"></script>
 </head>
 <body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+      <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
+      <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.42l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5"/></symbol>
+      <symbol id="i-hand" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+      <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+      <symbol id="i-github" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+      <symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+    </defs>
+  </svg>
+
   <a class="skip" href="#main">Skip to content</a>
   <nav class="nav" aria-label="Main">
     <div class="wrap">
-      <a class="brand" href="./"><span class="mark" aria-hidden="true">◎</span><span>DropZone</span></a>
+      <a class="brand" href="./" aria-label="DropZone home"><span class="mark" aria-hidden="true"></span><span>DropZone</span></a>
       <div class="nav-links">
         <a href="#how">How it works</a>
         <a href="#safety">Safety</a>
         <a href="#partners">Partners</a>
-        <a href="./demo.html">Demo</a>
-        <a href="./sim/">3D sim</a>
-        <a class="btn primary sm" href="./app/">Open the app</a>
+        <a href="./demo.html">Replay</a>
       </div>
+      <a class="btn primary sm" href="./app/">Open the app</a>
     </div>
   </nav>
 
   <main id="main">
+    <!-- HERO -->
     <header class="hero">
-      <div class="wrap">
-        <div>
-          <span class="eyebrow">Ring × drone delivery</span>
-          <h1>Your Ring camera checks the drone drop zone before the drone arrives.</h1>
-          <p class="lede">Amazon wants Prime Air to deliver <a href="https://www.aboutamazon.com/news/transportation/amazon-drone-prime-air-expanded-delivery-faa-approval" rel="noopener">500 million packages a year</a> by the end of the decade. Before each drone lands, Ring checks the spot and Alexa tells you what is in the way. With your yes, the pet door lets the dog in, yard lights come on at dusk and the sprinkler waits. The carrier gets a HOLD signal before landing if the spot is not clear.</p>
-          <div class="ctas">
-            <a class="btn primary" href="./app/">Open the app</a>
-            <a class="btn" href="./sim/">3D simulation →</a>
-            <a class="btn" href="./demo.html">Watch the interactive demo →</a>
+      <div class="wrap hero-copy">
+        <span class="eyebrow"><span class="dot" aria-hidden="true"></span>Ring × drone delivery</span>
+        <h1>Your Ring camera checks the drop zone <span class="grad">before the drone arrives.</span></h1>
+        <p class="lede">Alexa tells you what is in the way. Your pet door, yard lights and sprinkler help clear the spot, with your yes. The carrier gets a HOLD if it is not clear.</p>
+        <div class="ctas">
+          <a class="btn primary lg" href="./app/">Try the demo home <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          <a class="btn ghost lg" href="./demo.html"><svg class="ic sm" aria-hidden="true"><use href="#i-play"/></svg> Watch the replay</a>
+        </div>
+        <p class="fine">Runs in your browser. No login, no token.</p>
+      </div>
+
+      <div class="wrap stage-wrap">
+        <figure class="stage" id="heroStage" aria-label="A backyard Ring camera view. A dog lies in the drop zone, Alexa asks to set the pet door to come-in-only, the dog goes in, a child runs through so the carrier gets HOLD, then the drone delivers inside the zone.">
+          <div class="cam">
+            <canvas id="heroCanvas" width="1280" height="720" aria-hidden="true"></canvas>
+            <svg class="ov" viewBox="0 0 1280 720" preserveAspectRatio="none" aria-hidden="true">
+              <polygon id="heroZone" class="zone" points="" />
+              <g id="heroBoxes"></g>
+            </svg>
+            <div class="hud tl"><span class="rec" aria-hidden="true"></span>Backyard Cam</div>
+            <div class="hud tr" id="heroEta">Drone 8:00 away</div>
+            <div class="status" id="heroStatus" data-s="checking"><span class="led"></span><b>Checking</b><span class="why"></span></div>
+            <div class="hud bl" id="heroTl" aria-hidden="true"><i></i></div>
           </div>
-          <p class="fine">The demo runs entirely in your browser. No login, no token.</p>
-        </div>
-        <div class="viz" role="img" aria-label="A backyard camera view: a dog is inside the drawn drop zone; DropZone says NOT CLEAR and the carrier gets HOLD.">
-          <div class="pool"></div>
-          <div class="zone"></div>
-          <div class="dog"></div>
-          <div class="verdict"><span>Zone: <b class="bad">NOT CLEAR</b> · dog</span><span>Carrier: <b class="hold">HOLD</b></span></div>
-        </div>
+
+          <div class="float alexa" id="heroAlexa" aria-live="off">
+            <div class="who"><span class="ring" aria-hidden="true"></span>Alexa</div>
+            <p id="heroSpeech">“Heads up: your drone delivery is about 8 minutes away, and there's a dog in the drop zone.”</p>
+            <div class="ask" id="heroAsk"><span class="b">Not now</span><span class="b yes" id="heroYes">Yes</span></div>
+          </div>
+
+          <div class="float panel" id="heroPanel">
+            <div class="ph">Delivery</div>
+            <dl>
+              <div><dt>Drop zone</dt><dd id="pZone" class="st">Checking</dd></div>
+              <div><dt>Pet door</dt><dd id="pDoor">normal</dd></div>
+              <div><dt>Carrier</dt><dd id="pAdv" class="mono">waiting</dd></div>
+              <div><dt>Holds</dt><dd id="pHolds" class="mono">0 / 3</dd></div>
+            </dl>
+          </div>
+          <div class="float receipt" id="heroReceipt"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><span><b>Delivered inside the drop zone</b><br /><span class="m">Proof-of-drop saved</span></span></div>
+        </figure>
       </div>
     </header>
 
-    <section class="s" id="problem">
+    <!-- PROBLEM -->
+    <section class="problem" id="problem">
       <div class="wrap">
-        <h2>Nobody checks the drop zone before the drone shows up.</h2>
-        <p class="sub">Drone delivery is moving from pilots to everyday use. Amazon Prime Air is expanding across the US, and Wing with Walmart plans 270+ locations. Each delivery needs a clear patch of yard roughly 10×10 ft.</p>
-        <ul class="facts">
-          <li>Amazon asks customers to keep “people, pets, vehicles, and objects taller than 5 feet … at least 10 feet away from the selected delivery point.”
-            <span class="src"><a href="https://www.amazon.com/gp/help/customer/display.html?nodeId=T3jxhuvPfQ629BOIL4" rel="noopener">Amazon drone delivery FAQ</a></span></li>
-          <li>If anyone runs through the zone, the drone aborts and the item goes by ground instead. A Phoenix customer's advice: <em>“If your dogs are in the backyard, bring them in.”</em>
-            <span class="src"><a href="https://www.ctinsider.com/business/article/amazon-drone-delivery-north-haven-ct-faa-22264288.php" rel="noopener">CT Insider</a> · <a href="https://www.businessinsider.com/amazon-drone-deliveries-fun-convenient-phoenix-2026-8" rel="noopener">Business Insider</a></span></li>
-          <li>Packages have ended up in pools and ponds.
-            <span class="src"><a href="https://www.theverge.com/tech/982808/amazon-prime-air-drones-packages-pools-ponds" rel="noopener">The Verge</a> · <a href="https://www.azfamily.com/2025/08/01/caught-camera-amazon-drone-mishap-sends-package-plunging-into-avondale-pool/" rel="noopener">AZFamily</a></span></li>
-          <li>Drop points are chosen remotely from maps, and the drone sees the spot for a few seconds from about 13 ft up.
-            <span class="src"><a href="https://www.primeair.amazon/technology" rel="noopener">Prime Air technology</a></span></li>
-        </ul>
-        <p class="callout">A Ring camera has watched that same patch of ground for months. It knows the dog is out right now, that a patio umbrella appeared yesterday, and where the pool is. DropZone uses that knowledge <b>before</b> the drone arrives, while the household can still do something about it.</p>
+        <div class="big-stat reveal">
+          <p class="k">Amazon's Prime Air goal</p>
+          <p class="n"><span>500 million</span> packages a year</p>
+          <p class="m">by the end of the decade. <a href="https://www.aboutamazon.com/news/transportation/amazon-drone-prime-air-expanded-delivery-faa-approval" rel="noopener">Source</a></p>
+        </div>
+        <h2 class="reveal">Nobody checks the drop zone before the drone shows up.</h2>
+        <div class="quotes">
+          <blockquote class="q q-lead reveal">
+            <p>“If your dogs are in the backyard, bring them in.”</p>
+            <footer>A Phoenix customer · <a href="https://www.businessinsider.com/amazon-drone-deliveries-fun-convenient-phoenix-2026-8" rel="noopener">Business Insider</a></footer>
+          </blockquote>
+          <div class="q reveal">
+            <p>Keep “people, pets, vehicles, and objects taller than 5 feet … at least 10 feet away from the selected delivery point.”</p>
+            <footer><a href="https://www.amazon.com/gp/help/customer/display.html?nodeId=T3jxhuvPfQ629BOIL4" rel="noopener">Amazon drone delivery FAQ</a></footer>
+          </div>
+          <div class="q reveal">
+            <p>If anyone runs through the zone, the drone aborts and the item goes by ground instead.</p>
+            <footer><a href="https://www.ctinsider.com/business/article/amazon-drone-delivery-north-haven-ct-faa-22264288.php" rel="noopener">CT Insider</a></footer>
+          </div>
+          <div class="q reveal">
+            <p>Packages have ended up in pools and ponds.</p>
+            <footer><a href="https://www.theverge.com/tech/982808/amazon-prime-air-drones-packages-pools-ponds" rel="noopener">The Verge</a> · <a href="https://www.azfamily.com/2025/08/01/caught-camera-amazon-drone-mishap-sends-package-plunging-into-avondale-pool/" rel="noopener">AZFamily</a></footer>
+          </div>
+          <div class="q reveal">
+            <p>Drop points are chosen remotely from maps. The drone sees the spot for a few seconds from about 13 ft up.</p>
+            <footer><a href="https://www.primeair.amazon/technology" rel="noopener">Prime Air technology</a></footer>
+          </div>
+        </div>
+        <p class="manifesto reveal">A Ring camera has watched that same patch of ground for months. It knows the dog is out right now, that a patio umbrella appeared yesterday, and where the pool is. DropZone uses that <em>before</em> the drone arrives, while you can still do something about it.</p>
       </div>
     </section>
 
-    <section class="s alt" id="how">
+    <!-- HOW IT WORKS: sticky scrollytelling -->
+    <section class="how" id="how">
       <div class="wrap">
-        <h2>How it works</h2>
-        <p class="sub">From T−8 minutes to the drop, then a receipt afterwards.</p>
-        <div class="grid g4">
-          <div class="card"><span class="n">1</span><h3>Ring sees the zone</h3><p>Ring frames are checked against the zone you drew. The answer is CLEAR, NOT CLEAR or UNKNOWN, timestamped, and expires after 90 seconds.</p></div>
-          <div class="card"><span class="n">2</span><h3>Alexa tells the household</h3><p>A simulated Alexa+ add-on: “Your drone delivery is about 8 minutes away, and there's a dog in the drop zone. Want me to set the pet door to come-in-only?”</p></div>
-          <div class="card"><span class="n">3</span><h3>Devices help, with your yes</h3><p>Only after the owner says yes does the simulated pet door go come-in-only. It restores itself after the drone has left.</p></div>
-          <div class="card"><span class="n">4</span><h3>Carrier gets one bit</h3><p>At T−60 s the carrier sees <b>HOLD</b> (with a reason code) or <b>NO_ADVISORY</b>. The carrier never receives video. After the drop, a Ring frame becomes a proof-of-drop receipt.</p></div>
+        <div class="sec-head reveal">
+          <span class="eyebrow">How it works</span>
+          <h2>From T−8 minutes to the drop.</h2>
+        </div>
+        <div class="story">
+          <div class="story-stage" aria-hidden="true">
+            <div class="sframe" id="storyFrame" data-step="1">
+              <canvas class="layer l1" width="1280" height="720"></canvas>
+              <canvas class="layer l2" width="1280" height="720"></canvas>
+              <canvas class="layer l3a" width="1280" height="720"></canvas>
+              <canvas class="layer l3b" width="1280" height="720"></canvas>
+              <canvas class="layer l4" width="1280" height="720"></canvas>
+
+              <div class="sv sv1">
+                <div class="tri"><span class="c">CLEAR</span><span class="n on">NOT CLEAR</span><span class="u">UNKNOWN</span></div>
+                <div class="chip">dog in the drop zone · valid 90 s</div>
+              </div>
+              <div class="sv sv2">
+                <div class="notif">
+                  <div class="who"><span class="ring"></span>Alexa <span class="t">now</span></div>
+                  <p>“Heads up: your drone delivery is about 8 minutes away, and there's a dog in the drop zone. Want me to set the pet door to come-in-only until the drone has left?”</p>
+                  <div class="ask"><span class="b">Not now</span><span class="b yes">Yes</span></div>
+                </div>
+              </div>
+              <div class="sv sv3">
+                <div class="devs">
+                  <span class="dev d1"><i></i>Yard lights <b>on</b></span>
+                  <span class="dev d2"><i></i>Sprinkler <b>paused</b></span>
+                  <span class="dev d3"><i></i>Pet door <b>come-in-only</b></span>
+                </div>
+                <div class="chip ch-unk">Too dark to read the zone</div>
+                <div class="chip ch-ok">Zone readable · CLEAR</div>
+              </div>
+              <div class="sv sv4">
+                <div class="adv">
+                  <div class="row"><span>Advisory</span><b class="hold">HOLD</b></div>
+                  <div class="row"><span>Reason</span><code>PERSON_IN_ZONE</code></div>
+                  <div class="row"><span>Holds</span><code>1 / 3</code></div>
+                  <div class="row"><span>Video sent</span><code>none</code></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="steps">
+            <li class="step" data-step="1">
+              <span class="num">01</span>
+              <h3>Ring sees the zone</h3>
+              <p>Frames are checked against the zone you drew. The answer is CLEAR, NOT CLEAR or UNKNOWN, timestamped, and it expires after 90 seconds.</p>
+            </li>
+            <li class="step" data-step="2">
+              <span class="num">02</span>
+              <h3>Alexa tells the household</h3>
+              <p>About 8 minutes out, Alexa says what is in the way and offers the one thing that helps.</p>
+            </li>
+            <li class="step" data-step="3">
+              <span class="num">03</span>
+              <h3>Devices help, with your yes</h3>
+              <p>The pet door goes come-in-only, yard lights come on at dusk so the camera can see, and the sprinkler waits. Each one restores itself after the drone has left.</p>
+            </li>
+            <li class="step" data-step="4">
+              <span class="num">04</span>
+              <h3>The carrier gets one bit</h3>
+              <p>At T−60 s the carrier sees HOLD with a reason code, or NO_ADVISORY. It never receives video. After the drop, a Ring frame becomes the proof-of-drop receipt.</p>
+            </li>
+          </ol>
         </div>
       </div>
     </section>
 
-    <section class="s" id="safety">
+    <!-- SCENARIOS -->
+    <section class="scen" id="replay">
       <div class="wrap">
-        <h2>Safety and privacy by design</h2>
-        <p class="sub">Designed against the Ring Program Requirements. If DropZone is down, slow or unsure, the carrier does exactly what it does today.</p>
-        <div class="grid g3">
-          <div class="card"><h3>Advisory only</h3><p>The carrier endpoint can only return HOLD or NO_ADVISORY, and <code>authorises_drop</code> is always false. Holds are capped at 3. The aircraft's own detect-and-avoid stays authoritative.</p></div>
-          <div class="card"><h3>UNKNOWN is first-class</h3><p>Offline camera, encrypted feed, an error, a stale frame or no zone: the answer is UNKNOWN, never CLEAR.</p></div>
-          <div class="card"><h3>Labels only</h3><p>“person”, “dog”, “vehicle”. No face matching, no tracking across locations, no plates. The carrier gets reason codes, never images.</p></div>
-          <div class="card"><h3>Consent before devices act</h3><p>The pet door refuses to change without the owner's explicit yes, and restores itself after the drop or after 15 minutes.</p></div>
-          <div class="card"><h3>Data minimisation</h3><p>In the browser path, frames are analysed on the device and never leave it. The server keeps only the latest verdict, in memory.</p></div>
-          <div class="card"><h3>Carrier-neutral</h3><p>It watches your own yard, not any carrier. It works with any drone operator and monitors no Amazon service's availability or performance.</p></div>
+        <div class="sec-head row reveal">
+          <div>
+            <span class="eyebrow">Replay</span>
+            <h2>Four deliveries, one backyard.</h2>
+          </div>
+          <a class="link" href="./demo.html">Open the replay <svg class="ic sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        </div>
+        <div class="scards">
+          <a class="scard reveal" href="./demo.html?scenario=saturday">
+            <span class="sph"><img src="./assets/yard/day.jpg" alt="" loading="lazy" /><img class="sp" src="./assets/yard/dog.png" alt="" loading="lazy" style="left:47%;top:46%;width:12%" /><span class="pill bad">NOT CLEAR</span></span>
+            <span class="t">Dog in the zone, then a kid at T−1 min</span>
+            <span class="d">Pet door goes come-in-only. The carrier gets a HOLD.</span>
+          </a>
+          <a class="scard reveal" href="./demo.html?scenario=unknown">
+            <span class="sph locked"><img src="./assets/yard/day.jpg" alt="" loading="lazy" /><span class="lock"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>Video is end-to-end encrypted</span><span class="pill unk">UNKNOWN</span></span>
+            <span class="t">Camera can't see</span>
+            <span class="d">UNKNOWN, never CLEAR. The drone flies exactly as it would today.</span>
+          </a>
+          <a class="scard reveal" href="./demo.html?scenario=pool">
+            <span class="sph"><img src="./assets/yard/day.jpg" alt="" loading="lazy" style="object-position:85% 50%" /><span class="poolmark"></span><span class="pill hold">Zone audit</span></span>
+            <span class="t">Pool right next to the drop point</span>
+            <span class="d">The audit warns and suggests a safer spot. Proof-of-drop catches the box by the pool.</span>
+          </a>
+          <a class="scard reveal" href="./demo.html?scenario=dusk">
+            <span class="sph"><img src="./assets/yard/dusk-lit.jpg" alt="" loading="lazy" /><span class="pill ok">CLEAR</span></span>
+            <span class="t">Dusk, sprinklers due mid-drop</span>
+            <span class="d">With your yes the yard lights come on and the next sprinkler run is paused.</span>
+          </a>
         </div>
       </div>
     </section>
 
-    <section class="s alt" id="partners">
-      <div class="wrap split">
-        <div>
-          <h2>For delivery partners</h2>
-          <p class="sub">One small, read-only HTTP contract. Poll it before the drop. It can ask for a delay; it can never authorise a landing.</p>
-          <ul class="ticks">
-            <li><b>Two answers only:</b> HOLD (with reason codes such as PERSON_IN_ZONE) or NO_ADVISORY.</li>
-            <li><b>Fail-open to today:</b> CLEAR and UNKNOWN both map to NO_ADVISORY.</li>
-            <li><b>Bounded:</b> each advisory carries <code>observed_at</code> and <code>valid_until</code>; holds are capped.</li>
-            <li><b>No media:</b> no images, no video, no identities ever cross the boundary.</li>
+    <!-- TRY THE APP -->
+    <section class="try" id="app">
+      <div class="wrap try-grid">
+        <div class="try-copy reveal">
+          <span class="eyebrow">The app</span>
+          <h2>Make your yard drone-ready.</h2>
+          <ul class="feat">
+            <li><b>Save your drop spots</b><span>Mark them on your camera view, like saved addresses.</span></li>
+            <li><b>Get a heads-up in time</b><span>“Drone in 8 min, the dog is in the drop zone.”</span></li>
+            <li><b>Your drone partner waits if it's busy</b><span>They only ever get “hold” or nothing. Never video.</span></li>
           </ul>
-          <p class="fine">Partners in the app are real drone operators shown as a preview. DropZone is not affiliated with them and no carrier integration exists today.</p>
+          <div class="ctas">
+            <a class="btn primary" href="./app/">Open the app <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+            <button class="btn ghost" type="button" id="tryHere">Try it on this page</button>
+          </div>
         </div>
-        <pre aria-label="Example advisory response"><span class="k">GET</span> /api/v1/advisory
+        <div class="phone reveal" id="phone">
+          <div class="screen">
+            <img id="phonePoster" src="./assets/landing/app-home-notclear.webp" width="390" height="844" alt="The DropZone app home screen: drop zone NOT CLEAR, dog in the zone, with the Backyard Cam live view." loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </section>
 
-{
+    <!-- SAFETY bento -->
+    <section class="safety" id="safety">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <span class="eyebrow">Safety and privacy</span>
+          <h2>It can ask the drone to wait.<br />It can never tell it to land.</h2>
+          <p class="sub">If DropZone is down, slow or unsure, the carrier does exactly what it does today.</p>
+        </div>
+        <div class="bento">
+          <div class="tile t-wide reveal">
+            <div class="tile-art code-art"><span class="ln"><span class="k">"advice"</span>: <span class="b">"HOLD"</span>,</span><span class="ln hl"><span class="k">"authorises_drop"</span>: <span class="v">false</span>,</span><span class="ln"><span class="k">"hold_seconds"</span>: <span class="v">60</span></span></div>
+            <h3><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>Advisory only</h3>
+            <p>The carrier endpoint returns HOLD or NO_ADVISORY, and <code>authorises_drop</code> is always false. Holds are capped at 3. The aircraft's own detect-and-avoid stays in charge.</p>
+          </div>
+          <div class="tile reveal">
+            <div class="tile-art tri-art"><span class="c">CLEAR</span><span class="n">NOT CLEAR</span><span class="u on">UNKNOWN</span></div>
+            <h3><svg class="ic" aria-hidden="true"><use href="#i-help"/></svg>UNKNOWN is first-class</h3>
+            <p>Offline camera, encrypted feed, an error, a stale frame or no zone: the answer is UNKNOWN, never CLEAR.</p>
+          </div>
+          <div class="tile reveal">
+            <div class="tile-art chips-art"><span>person</span><span>dog</span><span>vehicle</span><span class="no">faces</span><span class="no">plates</span></div>
+            <h3><svg class="ic" aria-hidden="true"><use href="#i-tag"/></svg>Labels only</h3>
+            <p>No face matching, no tracking across locations, no plates. The carrier gets reason codes, never images.</p>
+          </div>
+          <div class="tile reveal">
+            <h3><svg class="ic" aria-hidden="true"><use href="#i-hand"/></svg>Your yes first</h3>
+            <p>The pet door refuses to change without your explicit yes, and restores itself after the drop or after 15 minutes.</p>
+          </div>
+          <div class="tile reveal">
+            <h3><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>Data minimisation</h3>
+            <p>In the browser path, frames are analysed on the device and never leave it. The server keeps only the latest verdict, in memory.</p>
+          </div>
+          <div class="tile reveal">
+            <h3><svg class="ic" aria-hidden="true"><use href="#i-route"/></svg>Carrier-neutral</h3>
+            <p>It watches your own yard, not any carrier. It works with any drone operator and monitors no Amazon service's availability or performance.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PARTNERS -->
+    <section class="partners" id="partners">
+      <div class="wrap split">
+        <div class="reveal">
+          <span class="eyebrow">For delivery partners</span>
+          <h2>One small, <span class="nw">read-only</span> contract.</h2>
+          <p class="sub">Poll it before the drop. It can ask for a delay. It can never authorise a landing.</p>
+          <ul class="ticks">
+            <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><span><b>Two answers.</b> HOLD with reason codes such as PERSON_IN_ZONE, or NO_ADVISORY.</span></li>
+            <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><span><b>Fails open to today.</b> CLEAR and UNKNOWN both map to NO_ADVISORY.</span></li>
+            <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><span><b>Bounded.</b> Every advisory carries <code>observed_at</code> and <code>valid_until</code>. Holds are capped.</span></li>
+            <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><span><b>No media.</b> No images, no video, no identities cross the boundary.</span></li>
+          </ul>
+        </div>
+        <div class="codecard reveal" aria-label="Example advisory response">
+          <div class="cbar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="m">GET</span> /api/v1/advisory<span class="st">200</span></div>
+<pre>{
   <span class="k">"schema"</span>: <span class="v">"dropzone-plus/advisory@1"</span>,
   <span class="k">"advice"</span>: <span class="b">"HOLD"</span>,
   <span class="k">"authorises_drop"</span>: <span class="v">false</span>,
   <span class="k">"reason_codes"</span>: [<span class="v">"PERSON_IN_ZONE"</span>],
   <span class="k">"hold_seconds"</span>: <span class="v">60</span>,
   <span class="k">"zone_status"</span>: <span class="v">"NOT_CLEAR"</span>,
-  <span class="k">"observed_at"</span>: <span class="v">"2026-10-23T15:01:45.000Z"</span>,
-  <span class="k">"valid_until"</span>: <span class="v">"2026-10-23T15:03:15.000Z"</span>,
-  <span class="k">"delivery_ref"</span>: <span class="v">"SIM-OLCKRQ"</span>,
-  <span class="k">"disclaimer"</span>: <span class="v">"Advisory only. Can request a
-    delay, never authorises a drop. …"</span>
+  <span class="k">"delivery_ref"</span>: <span class="v">"SIM-OLCKRQ"</span>
 }</pre>
-      </div>
-    </section>
-
-    <section class="s" id="real">
-      <div class="wrap">
-        <h2>What's real and what's demo</h2>
-        <p class="sub">Everything below is either real or part of the demo.</p>
-        <table class="tbl">
-          <thead><tr><th>Piece</th><th>Status</th></tr></thead>
-          <tbody>
-            <tr><td>Zone logic: CLEAR / NOT CLEAR / UNKNOWN, expiry, zone audit</td><td><span class="pill real">Real</span></td></tr>
-            <tr><td>Advisory API (<code>GET /api/v1/advisory</code>)</td><td><span class="pill real">Real</span></td></tr>
-            <tr><td>Object detection (TensorFlow.js COCO-SSD, in the browser)</td><td><span class="pill real">Real</span></td></tr>
-            <tr><td>Ring Partner API: discovery, history, snapshots, live view</td><td><span class="pill real">Real</span> in live mode</td></tr>
-            <tr><td>Ring webhooks: HMAC verification is real, events are simulated</td><td><span class="pill sim">Simulated events</span></td></tr>
-            <tr><td>Replay yard, actors and scripted detections</td><td><span class="pill sim">Simulated</span></td></tr>
-            <tr><td>Alexa (Alexa+ add-on utterances, also exposed via MCP)</td><td><span class="pill sim">Simulated</span></td></tr>
-            <tr><td>Smart pet door</td><td><span class="pill sim">Simulated</span></td></tr>
-            <tr><td>Yard lights at dusk (on with your yes, restored after the drop)</td><td><span class="pill sim">Simulated</span></td></tr>
-            <tr><td>Sprinkler pause for the drop window (with your yes, schedule restored)</td><td><span class="pill sim">Simulated</span></td></tr>
-            <tr><td>Delivery partners (Amazon Prime Air, Wing, Zipline, Flytrex, Manna): preview, no live integration, not affiliated</td><td><span class="pill sim">Simulated linking</span></td></tr>
-            <tr><td>Drone carrier consuming the advisory</td><td><span class="pill sim">Simulated</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="s alt" id="built-on">
-      <div class="wrap">
-        <h2>Built on</h2>
-        <p class="sub">Live mode talks to the Ring Partner API directly from a small zero-dependency Node server; the token never reaches the browser.</p>
-        <div class="grid g3">
-          <div class="card"><h3>Ring Partner API</h3><p>Device discovery, event history, snapshot download, WHEP live view and signed webhooks, per the <a href="https://developer.amazon.com/docs/ring/api-documentation.html" rel="noopener">official API documentation</a>.</p></div>
-          <div class="card"><h3>Ring Developer Playground</h3><p>Live mode runs with a <a href="https://developer.amazon.com/ring/console/playground" rel="noopener">Ring Developer Playground</a> token and its simulated doorbell.</p></div>
-          <div class="card"><h3>Official starter</h3><p>Amazon's official starter for the Ring Partner API, <a href="https://github.com/AmazonAppDev/ring-api-helloworld" rel="noopener">ring-api-helloworld</a>, was our reference.</p></div>
         </div>
       </div>
     </section>
 
-    <section class="s" id="oss">
+    <!-- REAL vs DEMO -->
+    <section class="real" id="real">
       <div class="wrap">
-        <h2>Open source</h2>
-        <p class="sub">MIT licensed. Run it locally in replay mode with one command, or point live mode at our open-source mock of the Ring Partner API when you don't have a token.</p>
-        <div class="links">
-          <a class="btn" href="https://github.com/saurabh4269/dropzone-plus" rel="noopener">github.com/saurabh4269/dropzone-plus</a>
-          <a class="btn" href="https://github.com/saurabh4269/ring-partner-sandbox" rel="noopener">github.com/saurabh4269/ring-partner-sandbox</a>
+        <div class="sec-head reveal">
+          <h2>What's real and what's demo</h2>
         </div>
-        <div class="ctas" style="margin-top:28px">
-          <a class="btn primary" href="./app/">Open the app</a>
-          <a class="btn" href="./demo.html">Watch the interactive demo →</a>
+        <div class="rd reveal">
+          <div class="rd-col">
+            <h3><span class="pill ok">Real</span></h3>
+            <ul>
+              <li>Zone logic: CLEAR, NOT CLEAR, UNKNOWN, expiry and zone audit</li>
+              <li>Advisory API, <code>GET /api/v1/advisory</code></li>
+              <li>Object detection in the browser (TensorFlow.js COCO-SSD)</li>
+              <li>Ring Partner API in live mode: discovery, history, snapshots, live view</li>
+              <li>Ring webhook HMAC verification</li>
+            </ul>
+          </div>
+          <div class="rd-col">
+            <h3><span class="pill demo">Demo</span></h3>
+            <ul>
+              <li>Ring webhook events</li>
+              <li>Replay yard, actors and scripted detections</li>
+              <li>Alexa+ add-on utterances, also exposed via MCP</li>
+              <li>Smart pet door, yard lights and sprinkler</li>
+              <li>Delivery partner linking (Amazon Prime Air, Wing, Zipline, Flytrex, Manna): no live integration, not affiliated</li>
+              <li>Drone carrier consuming the advisory</li>
+            </ul>
+          </div>
+        </div>
+        <p class="rd-note reveal">DropZone is not affiliated with, endorsed by, or connected to Ring, Amazon or any drone operator.</p>
+      </div>
+    </section>
+
+    <!-- BUILT ON + OSS -->
+    <section class="built" id="built-on">
+      <div class="wrap">
+        <div class="built-grid">
+          <div class="reveal">
+            <span class="eyebrow">Built on</span>
+            <h2>The Ring Partner API.</h2>
+            <p class="sub">Live mode talks to it from a small zero-dependency Node server. The token never reaches the browser.</p>
+          </div>
+          <div class="links3">
+            <a class="lk reveal" href="https://developer.amazon.com/docs/ring/api-documentation.html" rel="noopener"><b>Ring Partner API</b><span>Device discovery, event history, snapshots, WHEP live view and signed webhooks.</span><svg class="ic sm" aria-hidden="true"><use href="#i-ext"/></svg></a>
+            <a class="lk reveal" href="https://developer.amazon.com/ring/console/playground" rel="noopener"><b>Ring Developer Playground</b><span>Live mode runs with a Playground token and its simulated doorbell.</span><svg class="ic sm" aria-hidden="true"><use href="#i-ext"/></svg></a>
+            <a class="lk reveal" href="https://github.com/AmazonAppDev/ring-api-helloworld" rel="noopener"><b>ring-api-helloworld</b><span>Amazon's official starter for the Ring Partner API was our reference.</span><svg class="ic sm" aria-hidden="true"><use href="#i-ext"/></svg></a>
+          </div>
+        </div>
+        <div class="oss reveal" id="oss">
+          <div>
+            <h3>Open source, MIT licensed.</h3>
+            <p>Run it locally in replay mode with one command, or point live mode at our open-source mock of the Ring Partner API when you don't have a token.</p>
+          </div>
+          <div class="oss-links">
+            <a class="btn ghost" href="https://github.com/saurabh4269/dropzone-plus" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-github"/></svg>dropzone-plus</a>
+            <a class="btn ghost" href="https://github.com/saurabh4269/ring-partner-sandbox" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-github"/></svg>ring-partner-sandbox</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="final">
+      <div class="final-img" aria-hidden="true"></div>
+      <div class="wrap final-copy reveal">
+        <h2>See your yard the way the drone can't.</h2>
+        <div class="ctas center">
+          <a class="btn primary lg" href="./app/">Try the demo home <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          <a class="btn ghost lg" href="./demo.html"><svg class="ic sm" aria-hidden="true"><use href="#i-play"/></svg> Watch the replay</a>
         </div>
       </div>
     </section>
   </main>
 
-  <footer>
+  <footer class="foot">
     <div class="wrap">
-      <span>DropZone · MIT licence · Built for the Amazon Developer Hackathon 2026, Ring track.</span>
-      <span>Not affiliated with, endorsed by, or connected to any drone operator, or to Ring or Amazon.</span>
+      <span class="brand sm"><span class="mark" aria-hidden="true"></span>DropZone</span>
+      <span>MIT licence · Built for the Amazon Developer Hackathon 2026, Ring track.</span>
+      <span class="fl"><a href="./app/">App</a><a href="./demo.html">Replay</a><a href="./sim/">3D sim</a><a href="https://github.com/saurabh4269/dropzone-plus" rel="noopener">GitHub</a></span>
     </div>
   </footer>
 </body>
