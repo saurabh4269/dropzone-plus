@@ -310,7 +310,7 @@ function frame() {
     dov.fillStyle = safe ? 'rgba(46,160,67,.9)' : 'rgba(218,54,51,.92)'; dov.fillRect(0, D - 64, D, 64);
     dov.fillStyle = '#fff'; dov.font = '700 18px system-ui, sans-serif';
     dov.fillText(safe ? 'Drone-side check: nothing in view → safe to drop' : `Drone-side check: ${dDets.map((d) => d.label).join(', ')} in view → ABORT`, 12, D - 38);
-    dov.font = '13px system-ui, sans-serif'; dov.fillText('The pool is outside this field of view: the drone cannot see it.', 12, D - 16);
+    dov.font = '13px system-ui, sans-serif'; dov.fillText(droneFootprint(p)[2] < POOL.x0 ? 'The pool is outside this field of view: the drone cannot see it.' : 'Pool at the edge of view now; at 13 ft it drops out of view.', 12, D - 16);
   } else {
     banner(dov, D, 'DRONE DOWN-LOOKING CAMERA · SIMULATED', 'Active only on final approach (≈ 13 ft above the drop point)');
     dov.fillStyle = '#8b949e'; dov.font = '600 18px system-ui, sans-serif';
