@@ -38,6 +38,8 @@ Machine and date: Linux, Node 22, 23 Oct 2026 (IST).
 - **Workaround:** we wrote `scripts/simulate-events.js`, which sends Ring v1.1-shaped, HMAC-signed events (marked `meta.simulated: true`) to our verifier (`lib/webhook.js`).
 - **Suggestion:** add a Playground "fire webhook" control with a configurable URL and the developer's signing key. It's the single most useful addition for the "event-based triggers" category the track asks for.
 
+- **Follow-up:** we turned this workaround into a standalone open-source tool, [ring-partner-sandbox](https://github.com/saurabh4269/ring-partner-sandbox), a local mock API plus a signed webhook simulator.
+
 ### 5. The 30-minute Playground token has no refresh, so a hosted demo is impossible without replay (Reported/Docs, High)
 - **Task:** keep a judge-accessible demo working through judging (9–20 Nov).
 - **Expected:** a long-lived sandbox credential or refresh token for the Playground.

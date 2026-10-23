@@ -14,7 +14,7 @@ Deadline: **Sat 24 Oct 2026, 00:30 IST (Fri 12:00 PT)**. After you submit, pin t
   - 16 unit tests (`npm test`) cover zone logic, the veto-only advisory, consent gating, the full delivery window, HMAC and idempotency.
 - **Live demo (replay, static):** https://saurabh4269.github.io/dropzone-plus/. It is served from the `gh-pages` branch; republish with `./scripts/deploy-pages.sh`.
 - **README.md** covers what, why (with sources), the policy stance, Ring API usage, what's real vs simulated, architecture and how to run it. **FRICTION.md** has 11 entries, each tagged Observed / Docs / Reported, plus feature requests.
-- **Open Source mini-challenge repo:** see the "Open source" section below.
+- **Open Source mini-challenge repo:** ring-partner-sandbox (see below). DropZone+ LIVE mode was tested end to end against it (`RING_API_BASE=http://localhost:8686`).
 
 ## What YOU must do (in this order)
 
@@ -35,7 +35,8 @@ Deadline: **Sat 24 Oct 2026, 00:30 IST (Fri 12:00 PT)**. After you submit, pin t
    4. Use **Edit zone** to draw a zone on the Ring frame.
    5. Click **Simulate drone order**, then in a second terminal run `RING_WEBHOOK_SECRET=dev-secret npm run sim -- human`. The timeline shows the signed webhook arriving and an automatic re-check.
 4. Screen-record all of that. **This is the proof that the Ring API is used at runtime.** Ring's watermark on Playground media is allowed in the public video (forum 45541).
-5. If snapshots fail in the Playground (we couldn't test them without a token), the app shows UNKNOWN, which is correct behaviour. Use the WHEP live frame instead, and add a FRICTION entry with the exact status code.
+5. **A snapshot older than 120 s gives UNKNOWN on purpose.** The `latest_in_range` call returns the last recording, which can be minutes old. If the zone shows "frame too old", press a Playground button (Motion or Package) to make fresh media, or use WHEP and click **Analyse live frame**, which is always fresh.
+6. If snapshots fail in the Playground (we couldn't test them without a token), the app shows UNKNOWN, which is correct behaviour. Use the WHEP live frame instead, and add a FRICTION entry with the exact status code.
 
 ### 2. Record the video (< 3 min, public YouTube or Vimeo, no third-party music or logos)
 Script (about 2:45):
@@ -84,10 +85,13 @@ Say "simulated" whenever the carrier, Alexa or the pet door is on screen. Don't 
     - *What needs work:* an OAuth token without `workflow` scope can't push an Actions workflow, so we deploy from a branch.
 
 ## Open source (separate repo)
-_Filled in below once the sandbox repo is published._
+- **https://github.com/saurabh4269/ring-partner-sandbox** (MIT, public, 23 tests). It's a local mock of the Ring Partner API with JSON:API shapes, the Bearer/`User-Agent`/`Hardware_Id` 406 rules, the 303 snapshot flow, and history with an `event_types` filter. It also includes a signed v1.1 webhook simulator covering all 10 event types, timed scenarios that keep history and webhooks consistent, and a verifier library (JS and Python) with middleware.
+- It addresses exactly what the Playground lacks (a 30-minute token, no webhooks). DropZone+'s live mode was tested end to end against it: discovery, status, capabilities, history, snapshot, then COCO-SSD scoring and a signed webhook that triggers a re-check.
+- Enter it in the **Open Source mini-challenge** with a short blurb. "Built during the hackathon window; separate from the main entry; unofficial, shapes from the public docs."
+- Before submitting, try it yourself: `node bin/ring-sandbox.js serve`, then `npm test`.
 
 ## Open risks
-1. **The live Ring path has not been run against the real Playground** (there's no token on this machine). The calls were checked against the docs and against the real API with an invalid token (401 handled correctly). Snapshot availability for the Playground device is unconfirmed. If it fails, the app shows UNKNOWN, and you should use WHEP.
+1. **The live Ring path has not been run against the real Playground** (there's no token on this machine). It was checked against the docs, against the real API with an invalid token (401 handled correctly), and end to end against the ring-partner-sandbox mock. Testing against the mock found and fixed a real bug: the JSON:API `included` lookup for device status. Snapshot availability for the Playground device is unconfirmed. If it fails, the app shows UNKNOWN, and you should use WHEP.
 2. **WHEP from the browser** relies on STUN only. Some networks may need TURN. Sessions end after about 55 s.
 3. **Bedrock is untested.** Don't claim it in Built With unless you run `DZ_BEDROCK=1` with real credentials.
 4. **The carrier is simulated.** Some judges may discount that; the pitch should lead with household value.

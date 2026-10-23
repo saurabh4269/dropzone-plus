@@ -117,7 +117,7 @@ npm start                          # UI switches to LIVE: Discover → Check zon
 RING_WEBHOOK_SECRET=dev-secret npm run sim -- human   # (other terminal) simulated signed webhook → re-check
 ```
 
-The server listens on `127.0.0.1` by default (set `HOST=0.0.0.0` deliberately; in LIVE mode it proxies your camera). Add `?replay` to the URL to force replay mode while a token is set. `?scenario=pool&seek=200` jumps into a scenario. `?photo=<image-url>` runs real detection on any CORS-readable image.
+The server listens on `127.0.0.1` by default (set `HOST=0.0.0.0` deliberately; in LIVE mode it proxies your camera). No token? Run LIVE mode against our open-source mock of the Ring Partner API, [ring-partner-sandbox](https://github.com/saurabh4269/ring-partner-sandbox): `npx github:saurabh4269/ring-partner-sandbox serve` (or clone it and run `node bin/ring-sandbox.js serve`), then `RING_API_BASE=http://localhost:8686 RING_ACCESS_TOKEN=sandbox-token npm start`. The badge then reads "LIVE · mock Ring API" so it can't be mistaken for real Ring data. Add `?replay` to the URL to force replay mode while a token is set. `?scenario=pool&seek=200` jumps into a scenario. `?photo=<image-url>` runs real detection on any CORS-readable image.
 
 **MCP (simulated Alexa+ add-on surface):**
 

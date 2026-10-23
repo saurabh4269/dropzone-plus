@@ -9,7 +9,7 @@ import http from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ring, ringConfigured, pickDevice, summarizeDevice, callLog, RingError } from './lib/ring.js';
+import { ring, ringConfigured, pickDevice, summarizeDevice, callLog, RingError, RING_API } from './lib/ring.js';
 import { verify, firstDelivery } from './lib/webhook.js';
 import { buildAdvisory } from './public/core/advisory.js';
 import { bedrockAvailable, describeWithBedrock } from './lib/bedrock.js';
@@ -60,7 +60,7 @@ async function attempt(fn) {
 const routes = {
   'GET /api/config': async () => ({
     mode: ringConfigured() ? 'live' : 'replay',
-    ring: { configured: ringConfigured(), api: 'https://api.amazonvision.com' },
+    ring: { configured: ringConfigured(), api: RING_API, official: RING_API === 'https://api.amazonvision.com' },
     webhook: { endpoint: '/webhooks/ring', secretIsDefault: !process.env.RING_WEBHOOK_SECRET },
     vision: { browser: 'coco-ssd (TensorFlow.js)', bedrock: await bedrockAvailable() },
   }),
