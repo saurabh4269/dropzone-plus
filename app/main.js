@@ -238,6 +238,7 @@ async function proofOfDrop() {
   delivery.proofing = true;
   const z = delivery.zone;
   const after = await grabFrame();
+  delivery.lastFrame = after; // the home tile shows the proof frame
   let found = { ok: false, reason: after.readable ? 'NO_REFERENCE_FRAME' : 'MEDIA_UNREADABLE' };
   if (after.readable && delivery.beforeFrame) found = findNewObject(delivery.beforeFrame, small(after), { zone: z.polygon, hazards: z.hazards || [] });
   // proof image: the after-frame with the zone and found box drawn on it
@@ -289,7 +290,7 @@ function renderRoute() {
   cleanup = fn(parts.slice(1), new URLSearchParams(query || '')) || null;
   $('#view').scrollTop = 0;
 }
-window.addEventListener('hashchange', renderRoute);
+window.addEventListener('hashchange', () => { closeSheet(); renderRoute(); });
 const view = (html) => { $('#view').innerHTML = html; return $('#view'); };
 const viewEl = () => $('#view');
 
@@ -573,12 +574,22 @@ function renderLive() {
     eta = s.phase === PHASE.INBOUND ? `<span class="small">Drone in</span><b>${fmtDur(left)}</b>` : s.phase === PHASE.HOLDING ? `<span class="small">Holding · new ETA</span><b>${fmtDur(left)}</b>` : s.phase === PHASE.LANDING ? `<span class="small">Landing</span><b>${fmtDur(left)}</b>` : `<span class="small">Delivered</span><b>📦</b>`;
   }
   const idle = !s;
+  if (s?.receipt) { // after the drop, the result matters more than the live zone state
+    const good = s.receipt.placement === 'in_zone';
+    hero.className = `status-hero ${good ? 'CLEAR' : 'UNKNOWN'}`;
+    hero.innerHTML = `<div class="k">${esc(delivery.partner.name)} · example partner</div><div class="v">DELIVERED</div><div class="r">${esc(placementText(s.receipt))}</div><div class="eta"><b>📦</b></div>${delivery.alexa[0] && S().settings.alexa ? `<div class="alexa"><span class="ring" aria-hidden="true"></span><div><div class="small mute">Alexa · simulated Alexa+ add-on</div>“${esc(delivery.alexa[0].text)}”</div></div>` : ''}`;
+    $('#obs').textContent = '';
+    return renderNext(s);
+  }
   hero.className = `status-hero ${v.status}`;
   hero.innerHTML = `<div class="k">${idle ? 'Drop zone right now' : `${esc(delivery.partner.name)} · example partner`}</div><div class="v">${v.status.replace('_', ' ')}</div><div class="r">${esc(reason)}</div>${eta ? `<div class="eta">${eta}</div>` : ''}
     ${s && delivery.alexa[0] && S().settings.alexa ? `<div class="alexa"><span class="ring" aria-hidden="true"></span><div><div class="small mute">Alexa · simulated Alexa+ add-on</div>“${esc(delivery.alexa[0].text)}”</div></div>` : ''}
     ${s?.pendingPrompt ? `<div class="ask btns"><button class="primary" id="yes">Yes</button><button id="no">Not now</button></div>` : ''}`;
   if (s?.pendingPrompt) { $('#yes').onclick = () => { delivery.session.answer(s.pendingPrompt.id, true); renderLive(); }; $('#no').onclick = () => { delivery.session.answer(s.pendingPrompt.id, false); renderLive(); }; }
   $('#obs').textContent = v.observed_at ? `checked ${fmtTime(Date.parse(v.observed_at))}` : '';
+  renderNext(s);
+}
+function renderNext(s) {
   const next = $('#next');
   const linked = PARTNERS.filter((p) => S().partners[p.id]?.linked);
   if (s && s.phase !== PHASE.DELIVERED) next.innerHTML = `<div class="card tight row"><span class="grow small">${isDemo() ? 'Demo clock runs 10× faster. ' : ''}Holds requested: ${s.holdsIssued}/3 · Pet door: ${s.petDoor.mode.replace('_', '-')}</span><button class="danger" id="cancel">End</button></div>`;
