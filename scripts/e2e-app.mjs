@@ -70,6 +70,9 @@ await click('#sim'); await sleep(1500);
 await check('delivery inbound: NOT CLEAR + Alexa ask', async () => /NOT CLEAR/.test(await text()) && /Yes/.test(await text()));
 await shot('home-inbound');
 await click('#yes'); await sleep(300);
+await click('#ownerHold'); await sleep(400);
+await check('owner can ask the drone to wait (veto-only HOLD)', async () => /owner requested hold/i.test(await text()));
+await shot('owner-hold');
 await ev(`(()=>{const d=window.dropzoneApp.delivery; const now=d.clock.base+(performance.now()-d.clock.real)*d.speed; d.clock={base:now, real:performance.now()}; d.speed=60;})()`);
 for (let i = 0; i < 40; i++) { await sleep(500); if (/Delivered|inside your drop zone|Landed/.test(await text())) break; }
 await sleep(2500);
