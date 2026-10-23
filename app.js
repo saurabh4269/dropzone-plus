@@ -334,7 +334,7 @@ function stopLive() {
   clearTimeout(app.liveTimer);
   if (app.pc) { app.pc.close(); app.pc = null; }
   if (app.whepUrl) { fetch('./api/ring/whep', { method: 'DELETE', body: JSON.stringify({ sessionUrl: app.whepUrl }) }).catch(() => {}); app.whepUrl = null; }
-  if (app.view === 'video') app.view = app.image ? 'image' : 'scene';
+  if (app.view === 'video') app.view = app.mode === 'live' || app.image ? 'image' : 'scene'; // never fall back to the simulated yard in LIVE mode
   $('frameBtn').disabled = true;
 }
 
