@@ -2,6 +2,8 @@
 
 DropZone Home is an Alexa Smart Home (v3) skill with three **virtual** endpoints. No real hardware is switched: device state lives in the Lambda container's memory and resets on a cold start.
 
+It works in the real Alexa app. On 24 Oct 2026 at 01:30 IST the owner linked the skill on an India Alexa account, said "Alexa, turn on yard lights", and the eu-west-1 Lambda received the TurnOn directive and set Yard Lights ON (CloudWatch log).
+
 | Endpoint | Interface | Directives |
 | --- | --- | --- |
 | Yard Lights (`dz-yard-lights`) | Alexa.PowerController | TurnOn, TurnOff, ReportState |
@@ -10,8 +12,8 @@ DropZone Home is an Alexa Smart Home (v3) skill with three **virtual** endpoints
 
 Also handled: Alexa.Discovery Discover, Alexa.Authorization AcceptGrant, ErrorResponse (NO_SUCH_ENDPOINT, INVALID_DIRECTIVE).
 
-- Skill ID (development stage): `amzn1.ask.skill.e684e387-9b1c-47e6-8802-8fa02967da81`, en-US.
-- Lambda: `dropzone-home-smarthome`, us-east-1, Node.js 22, 128 MB, tag `project=dropzone`. Trigger scoped to the skill ID (principal alexa-connectedhome.amazon.com). No database, nothing always-on.
+- Skill ID (development stage): `amzn1.ask.skill.e684e387-9b1c-47e6-8802-8fa02967da81`, locales en-US, en-IN, en-GB and en-AU.
+- Lambda: `dropzone-home-smarthome`, with copies in us-east-1 (North America), eu-west-1 (India, UK) and us-west-2 (Australia), Node.js 22, 128 MB, tag `project=dropzone`. Trigger scoped to the skill ID (principal alexa-connectedhome.amazon.com). No database, nothing always-on.
 - Account linking: Login with Amazon, auth code grant, authorization URL https://www.amazon.com/ap/oa, token URL https://api.amazon.com/auth/o2/token, scope `profile`. Client ID and secret are read from an env file at deploy time and never committed.
 
 ## Code and tests
