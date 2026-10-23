@@ -34,7 +34,7 @@ h1 { margin: 0; font-size: 24px; letter-spacing: .3px; }
 .panel-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 .panel-h h2 { font-size: 15px; margin: 0; }
 .side { display: flex; flex-direction: column; gap: 16px; }
-.cam { grid-row: span 2; }
+.side { grid-row: span 2; }
 .tools { display: flex; gap: 6px; flex-wrap: wrap; }
 .file { position: relative; overflow: hidden; display: inline-block; padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px; background: #1f2631; cursor: pointer; }
 .file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
@@ -79,4 +79,4 @@ details summary { cursor: pointer; color: var(--mute); margin-top: 8px; }
 footer { padding: 8px 24px 30px; color: var(--mute); font-size: 13px; }
 footer a { color: var(--ring); }
 
-@media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } .cam { grid-row: auto; } }
+@media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } .side { grid-row: auto; } }
