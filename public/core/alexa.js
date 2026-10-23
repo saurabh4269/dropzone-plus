@@ -44,6 +44,11 @@ export function headsUp({ verdict, etaMin, household = {}, petDoor }) {
   return { speech, card: { title: `Drone in ${mins} min`, body: `Drop zone NOT CLEAR: ${d.what} ${d.where}.` }, prompt };
 }
 
+export function holdNotice({ verdict, holdSeconds }) {
+  const d = describe(verdict) || { what: 'something', where: 'in the drop zone' };
+  return { speech: `The drone is waiting about ${holdSeconds} seconds because there's ${d.what} ${d.where}. It will try again after that.`, card: { title: 'Drone holding', body: `Waiting ${holdSeconds}s: ${d.what} ${d.where}.` } };
+}
+
 export function confirmation(action, ok) {
   if (action === 'petdoor.in_only') return ok ? "Okay. The pet door is now come-in-only. I'll set it back once the drone has gone." : "I couldn't reach the pet door. You may want to call the dog in.";
   return ok ? 'Done.' : 'That didn\'t work.';

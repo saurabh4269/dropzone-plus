@@ -3,7 +3,7 @@
 
 import { STATUS, freshen, pointInPolygon, footprint, distanceToPolygon } from './zone.js';
 import { buildAdvisory, ADVICE } from './advisory.js';
-import { headsUp, confirmation, deliveryDone } from './alexa.js';
+import { headsUp, holdNotice, confirmation, deliveryDone } from './alexa.js';
 import { createPetDoor } from './petdoor.js';
 
 export const PHASE = Object.freeze({ IDLE: 'idle', INBOUND: 'inbound', HOLDING: 'holding', LANDING: 'landing', DELIVERED: 'delivered', DIVERTED: 'diverted' });
@@ -90,7 +90,7 @@ export function createSession({ zone, hazards = [], household = { hasPetDoor: tr
           s.delivery.etaAt = t + 60000 + adv.hold_seconds * 1000;
           s.phase = PHASE.HOLDING;
           log('carrier', { kind: 'hold', advisory: adv, newEta: new Date(s.delivery.etaAt).toISOString(), holds: s.holdsIssued });
-          maybeAnnounce(true);
+          log('alexa', { kind: 'speech', ...holdNotice({ verdict: freshen(s.verdict, t), holdSeconds: adv.hold_seconds }) });
         } else {
           s.phase = PHASE.LANDING;
           log('carrier', { kind: 'final-approach', advisory: adv, note: 'No HOLD; carrier proceeds under its own detect-and-avoid.' });

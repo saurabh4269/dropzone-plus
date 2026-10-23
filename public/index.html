@@ -1,1 +1,129 @@
-<h1>hi</h1>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DropZone+ · Ring checks the drop zone before the drone arrives</title>
+  <meta name="description" content="A Ring camera checks your yard's drone drop zone before the drone arrives. Alexa tells the household, a pet door can help, the carrier gets a veto-only HOLD." />
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛬</text></svg>" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo">◎</span>
+      <div>
+        <h1>DropZone<span class="plus">+</span></h1>
+        <p class="tag">Your Ring camera checks the drone drop zone before the drone arrives.</p>
+      </div>
+    </div>
+    <div class="badges">
+      <span id="modeBadge" class="badge sim">REPLAY · simulated</span>
+      <span class="badge policy" title="Ring Program Requirements 2.8: advisory only. Can delay, never authorises.">Advisory · veto-only</span>
+    </div>
+  </header>
+
+  <section class="controls" id="replayControls">
+    <label>Scenario
+      <select id="scenarioSel"></select>
+    </label>
+    <button id="playBtn" class="primary">▶ Play</button>
+    <button id="restartBtn">↺ Restart</button>
+    <label>Speed
+      <select id="speedSel"><option value="5">5×</option><option value="10" selected>10×</option><option value="20">20×</option></select>
+    </label>
+    <label class="chk"><input type="checkbox" id="speakChk" /> 🔊 Speak Alexa lines</label>
+    <p id="scenarioBlurb" class="blurb"></p>
+  </section>
+
+  <section class="controls hidden" id="liveControls">
+    <button id="discoverBtn">Discover Ring device</button>
+    <button id="snapBtn" class="primary">📸 Check zone now (Ring snapshot)</button>
+    <button id="liveBtn">🎥 Live view (WHEP)</button>
+    <button id="frameBtn" disabled>Analyse live frame</button>
+    <button id="orderBtn">🚁 Simulate drone order (ETA 8 min)</button>
+    <button id="proofBtn">📦 Proof-of-drop snapshot</button>
+    <label class="chk"><input type="checkbox" id="speakChk2" /> 🔊 Speak</label>
+    <p class="blurb">LIVE: frames come from the Ring Partner API (Ring Developer Playground). Carrier, Alexa and pet door remain simulated.</p>
+  </section>
+
+  <main class="grid">
+    <section class="panel cam">
+      <div class="panel-h">
+        <h2>Ring camera · drop zone</h2>
+        <div class="tools">
+          <button id="editZoneBtn" title="Click points on the image to outline your drop zone">✏️ Edit zone</button>
+          <button id="hazardBtn" title="Outline a pool, pond or hard edge once">🌊 Mark hazard</button>
+          <label class="file" title="Run real in-browser object detection (COCO-SSD) on any photo of a yard">🖼️ Test a photo<input type="file" id="fileIn" accept="image/*" /></label>
+        </div>
+      </div>
+      <div class="stage">
+        <canvas id="cam" width="1280" height="720"></canvas>
+        <video id="liveVideo" class="hidden" playsinline muted autoplay></video>
+        <div id="editHint" class="hint hidden"></div>
+      </div>
+      <div class="cam-foot">
+        <span id="srcLabel">source: —</span>
+        <span id="obsLabel">observed: —</span>
+        <span id="detLabel">detector: —</span>
+      </div>
+      <div id="audit" class="audit"></div>
+    </section>
+
+    <aside class="side">
+      <section class="panel echo">
+        <div class="panel-h"><h2>Echo Show card <small>simulated Alexa+ add-on</small></h2></div>
+        <div class="show">
+          <div id="statusBig" class="status unknown">UNKNOWN</div>
+          <div class="eta"><span id="etaText">No delivery inbound</span></div>
+          <div id="reasonText" class="reason">—</div>
+          <div class="speech"><span class="ring-light"></span><p id="speechText">“Alexa” lines appear here.</p></div>
+          <div id="promptBox" class="prompt hidden">
+            <p id="promptQ"></p>
+            <div><button id="yesBtn" class="primary">Yes</button><button id="noBtn">No</button></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel carrier">
+        <div class="panel-h"><h2>Carrier view <small>simulated carrier · any operator</small></h2></div>
+        <div class="kv"><span>Phase</span><b id="phaseText">idle</b></div>
+        <div class="kv"><span>Advisory</span><b id="adviceText">NO_ADVISORY</b></div>
+        <div class="kv"><span>Holds requested</span><b id="holdsText">0 / 3</b></div>
+        <details><summary>GET /api/v1/advisory</summary><pre id="advJson"></pre></details>
+        <p class="fine">The carrier only ever receives HOLD or NO_ADVISORY. No video, no “safe to land”.</p>
+      </section>
+
+      <section class="panel door">
+        <div class="panel-h"><h2>Pet door <small>simulated smart pet door</small></h2></div>
+        <div class="kv"><span>Mode</span><b id="doorText">normal</b></div>
+        <p class="fine">Changes only after the owner says yes. Restores itself after the drop or after 15 min.</p>
+      </section>
+    </aside>
+
+    <section class="panel receipt">
+      <div class="panel-h"><h2>Proof of drop</h2></div>
+      <div id="receiptBox" class="fine">No delivery yet.</div>
+    </section>
+
+    <section class="panel log">
+      <div class="panel-h"><h2>Timeline</h2><small id="clockText"></small></div>
+      <ol id="timeline"></ol>
+    </section>
+
+    <section class="panel ring hidden" id="ringPanel">
+      <div class="panel-h"><h2>Ring API calls (live)</h2></div>
+      <div id="deviceBox" class="fine"></div>
+      <pre id="ringCalls"></pre>
+    </section>
+  </main>
+
+  <footer>
+    <p><b>What's real:</b> the zone logic, the veto-only advisory, the timing/expiry rules, in-browser object detection on photos you upload or Ring frames, and (LIVE mode) calls to the Ring Partner API.
+      <b>What's simulated:</b> the replay yard and its scripted detections, the carrier, the Alexa+ add-on, the pet door. Nothing here is affiliated with any drone operator.</p>
+    <p><a href="https://github.com/saurabh4269/dropzone-plus">Source on GitHub (MIT)</a></p>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
