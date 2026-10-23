@@ -86,3 +86,5 @@ footer { padding: 8px 24px 30px; color: var(--mute); font-size: 13px; }
 footer a { color: var(--ring); }
 
 @media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } .side { grid-row: auto; } }
+
+.audit .suggest { display: flex; gap: 10px; align-items: center; justify-content: space-between; border-left: 3px solid #fff; }

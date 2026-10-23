@@ -40,11 +40,13 @@ const checks = [
   { name: 'saturday end: delivered in zone, door restored', q: 'scenario=saturday&seek=570', expect: { receiptBox: /inside the drop zone[\s\S]*change detection/, doorText: /normal/ } },
   { name: 'unknown: never CLEAR, no advisory', q: 'scenario=unknown&seek=200', expect: { statusBig: /UNKNOWN/, adviceText: /NO_ADVISORY/ } },
   { name: 'pool: audit warns, receipt by the pool', q: 'scenario=pool&seek=240', expect: { audit: /Pool is ~\d+ ft/, receiptBox: /next to the pool/ } },
+  { name: 'pool + apply suggested zone: box lands in the new zone', q: 'scenario=pool', before: "document.querySelector('.suggest button').click(); window.dropzone.seek(240);", expect: { audit: /^(?![\s\S]*Suggested)[\s\S]*Pool is ~\d+ ft away/, receiptBox: /inside the drop zone/ } },
 ];
 let failed = 0;
 for (const c of checks) {
   await cdp('Page.navigate', { url: `${base}?${c.q}` });
   await sleep(1800);
+  if (c.before) { await evaluate(c.before); await sleep(500); }
   const bad = [];
   for (const [elId, re] of Object.entries(c.expect)) { const v = await evaluate(text(elId)); if (!re.test(v || '')) bad.push(`${elId}=${JSON.stringify((v || '').slice(0, 80))}`); }
   const shot = await cdp('Page.captureScreenshot', { format: 'png' });

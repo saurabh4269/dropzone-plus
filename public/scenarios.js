@@ -39,7 +39,7 @@ export const SCENARIOS = [
   {
     id: 'pool',
     title: 'Pool right next to the drop point',
-    blurb: 'The zone audit warns that the pool is inside downwash range. The zone is clear, nobody holds, and the post-drop proof shows the box ended up by the pool.',
+    blurb: 'The zone audit warns that the pool is inside downwash range and suggests a safer spot. Play as-is: the box ends up by the pool, and proof-of-drop (before/after change detection) catches it. Or press “Apply suggestion” first and replay.',
     etaSec: 180,
     durationSec: 260,
     hazards: [POOL],

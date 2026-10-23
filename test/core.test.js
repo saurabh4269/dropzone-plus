@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateZone, freshen, auditZone, STATUS } from '../public/core/zone.js';
+import { evaluateZone, freshen, auditZone, suggestZone, STATUS } from '../public/core/zone.js';
 import { buildAdvisory, ADVICE } from '../public/core/advisory.js';
 import { createSession, PHASE } from '../public/core/engine.js';
 import { headsUp } from '../public/core/alexa.js';
@@ -117,4 +117,13 @@ test('an object standing over most of the zone blocks it even if its feet are be
   const v = evaluateZone({ detections: [big], zone, observedAt: T, now: T });
   assert.equal(v.status, STATUS.NOT_CLEAR);
   assert.equal(v.objects[0].where, 'over');
+});
+
+test('zone suggestion moves the zone away from a pool until the audit passes', () => {
+  const pool = { kind: 'pool', polygon: [[0.62, 0.62], [0.75, 0.62], [0.75, 0.75], [0.62, 0.75]] };
+  const sug = suggestZone(zone, [pool]);
+  assert.equal(sug.satisfied, true);
+  assert.ok(sug.dx < 0, 'moves left, away from the pool');
+  assert.ok(auditZone(sug.zone, [pool]).every((f) => f.level === 'ok'));
+  assert.equal(suggestZone(sug.zone, [pool]), null, 'already fine -> no suggestion');
 });
