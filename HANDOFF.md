@@ -2,23 +2,36 @@
 
 Deadline: **Sat 24 Oct 2026, 00:30 IST (Fri 12:00 PT)**. After you submit, pin the judged links to a commit SHA (see the end of this file).
 
-## What's done
-- **App:** https://github.com/saurabh4269/dropzone-plus (MIT, public)
-  - Replay mode, no token: three labelled-simulated scenarios run the full flow. The dog in the zone triggers an Alexa heads-up, the owner says yes, the pet door goes come-in-only, a kid at T−60 s triggers a carrier HOLD, the zone clears, the box drops and a proof-of-drop receipt is produced. The other two scenarios cover UNKNOWN (camera can't see) and a pool next to the drop point (zone audit, then a receipt showing the box by the pool).
-  - Live mode: set `RING_ACCESS_TOKEN` and the server calls the Ring Partner API at runtime: users/me, devices, status, capabilities, history, image snapshot (303 flow) and the WHEP live view. Frames run through **real** in-browser object detection (TF.js COCO-SSD) and are scored against your drawn zone.
-  - Ring webhooks: HMAC verification and idempotency, plus a signed event simulator (`npm run sim`).
-  - Carrier contract `GET /api/v1/advisory` is veto-only (HOLD or NO_ADVISORY, `authorises_drop:false`).
-  - MCP server (`mcp/dropzone-mcp.js`) as the "simulated Alexa+ add-on" surface.
-  - Optional Amazon Bedrock (Nova Lite, Converse API) detector, off by default. When it's enabled, the UI uses it for Ring snapshots. It has been tested up to AWS authentication only.
-  - "Test a photo" runs real detection on any uploaded yard photo. You can answer the Alexa prompt by voice in Chrome.
-  - 16 unit tests (`npm test`) cover zone logic, the veto-only advisory, consent gating, the full delivery window, HMAC and idempotency.
-- **Live demo (replay, static):** https://saurabh4269.github.io/dropzone-plus/. It is served from the `gh-pages` branch; republish with `./scripts/deploy-pages.sh`.
-- **README.md** covers what, why (with sources), the policy stance, Ring API usage, what's real vs simulated, architecture and how to run it. **FRICTION.md** has 11 entries, each tagged Observed / Docs / Reported, plus feature requests.
-- **Open Source mini-challenge repo:** ring-partner-sandbox (see below). DropZone+ LIVE mode was tested end to end against it (`RING_API_BASE=http://localhost:8686`).
+## What's done (as of the final push; latest SHAs are printed in the final summary)
+**Links.** Website https://saurabh4269.github.io/dropzone-plus/ · **App (PWA)** https://saurabh4269.github.io/dropzone-plus/app/ · Judge demo https://saurabh4269.github.io/dropzone-plus/demo.html · 3D simulation https://saurabh4269.github.io/dropzone-plus/sim/ (if listed in the README) · Video https://vimeo.com/1238833557 · Sandbox https://github.com/saurabh4269/ring-partner-sandbox (v0.2.1)
+
+**DropZone+ (main repo)**
+- **Homeowner PWA (`/app/`)**, installable (manifest, icons, service worker, offline shell), built for 390 px.
+  - **Onboarding:** welcome → Connect Ring (Partner-Initiated OAuth per the docs, Playground token, or a labelled demo home) → camera picker (names and online/offline, per the Ring UX guide) → notifications, Alexa heads-up and pet-door toggles → drag-to-mark drop zone with a name and description.
+  - **Tabs:** Home (next drone, live CLEAR / NOT CLEAR / UNKNOWN, Alexa line, one-tap pet-door yes, HOLD, Check now / Live view), Zones (several zones, one default, hazards, audit and suggested safer spot), Deliveries (proof-of-drop photo and placement), Partners (3 **fictional example partners**, labelled simulated, with learn more, consent, which zone, optional drop instructions, unlink), Settings (connection, toggles, theme, privacy, delete all data).
+- **Ring account linking per the docs** (`lib/oauth.js`): PKCE S256, `state`, scope `ava.v1:read`, code exchange, `PATCH app-integrations {status: completed}`, and `DELETE` to unlink. It's unit-tested, but it has never run against Ring because hackathon entrants get no partner credentials. The **Playground-token onboarding** (`POST /api/ring/token`, localhost only) is the working path.
+- **Proof of drop by before/after change detection** (`public/core/changes.js`), used in the demo, the PWA and live mode.
+- **Zone audit suggests a safer zone** (`suggestZone`); one click applies it.
+- **Detector vendored.** TF.js and the COCO-SSD model weights are in `public/vendor/` (Apache-2.0, ~19 MB), so there's no CDN dependency at runtime. The CDN is only a fallback.
+- **Tests:** `npm test` has 36 (zone logic, advisory, every replay scenario, change detection, OAuth/PKCE, HMAC, LIVE-mode integration against ring-partner-sandbox). `npm run e2e` checks the website and demo, and `npm run e2e:app` walks the full PWA journey at 390×844. All pass locally and against Pages.
+- **README:** hero image, labelled AI concept GIF, link table, an exact map of where the Ring API is called (file, function, trigger), a mermaid architecture diagram, real vs simulated, the PWA journey, and references (Ring docs, UX guide, ring-api-helloworld).
+- **FRICTION.md:** 14 entries, every one with task, steps, expected, actual, severity, workaround and suggestion. New ones: the OAuth scope mismatch in the docs (`ava` vs `ava.v1:read`), two response shapes for app-integrations, and CORS plus no sandbox OAuth client.
+- **CI** is ready in `ci/ci.yml`, but **you must enable it** (see below).
+
+**ring-partner-sandbox (Open Source entry):** record/replay proxy fixtures with redaction, a composite GitHub Action (`action.yml`), examples (Node client, node:http and Python webhook receivers), an API coverage table, CONTRIBUTING, CHANGELOG, 33 tests, and the v0.2.1 release. CI is ready in `ci/ci.yml`.
 
 ## What YOU must do (in this order)
 
+### 0. Turn on CI in both repos (2 min)
+```bash
+gh auth refresh -h github.com -s workflow
+cd dropzone-plus && ./scripts/enable-ci.sh
+cd ../ring-partner-sandbox && ./scripts/enable-ci.sh
+```
+Then check that the Actions tab is green in both repos. These commits come after any pinned SHA, which is harmless.
+
 ### 1. Get a Ring Playground token and record the real Ring segment (about 20 min)
+**Easiest path:** run `npm start`, open http://localhost:8787/app/ and choose **Use a Ring Developer Playground token** (paste the token). Pick the camera, draw the zone on the real Playground snapshot, then use **Check now** and **Live view**. The judge-demo LIVE panel at http://localhost:8787/demo.html also lists every Ring call with its status code.
 1. Open https://developer.amazon.com/ring/console/playground and copy the access token. It lasts about 30 minutes, so do steps 2–5 straight away.
 2. Check the API:
    ```bash

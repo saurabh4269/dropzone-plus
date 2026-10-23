@@ -172,6 +172,8 @@ npm run e2e:app          # headless Chrome at 390x844: full PWA journey, onboard
 npm start                # http://localhost:8787  → REPLAY mode (no token needed)
 ```
 
+**CI.** [`ci/ci.yml`](ci/ci.yml) runs `npm test` on Node 20 and 22 (with ring-partner-sandbox installed, so the LIVE-mode integration tests run) plus both browser end-to-end suites. Our deploy token can't push files under `.github/workflows`, so the workflow lives in `ci/`; `scripts/enable-ci.sh` installs it once a maintainer runs `gh auth refresh -s workflow`. Every commit before submission was tested locally with the same commands.
+
 **LIVE mode with the Ring Developer Playground:**
 
 ```bash
