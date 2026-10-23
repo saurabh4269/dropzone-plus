@@ -14,7 +14,8 @@
     "ring:probe": "node scripts/ring-probe.js",
     "e2e": "node scripts/e2e.mjs",
     "test:all": "npm test && npm run e2e && npm run e2e:app",
-    "e2e:app": "node scripts/e2e-app.mjs"
+    "e2e:app": "node scripts/e2e-app.mjs",
+    "playground": "node scripts/playground-e2e.mjs"
   },
   "optionalDependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.700.0"
