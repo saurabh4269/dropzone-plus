@@ -81,10 +81,10 @@ h3 { font-size: 18px; margin: 0 0 6px; }
 .callout { margin-top: 28px; padding: 20px 22px; border-radius: var(--r); border: 1px solid rgba(26, 163, 255, .35); background: rgba(26, 163, 255, .07); font-size: 17px; }
 
 /* code */
-pre { margin: 0; background: #0a0d12; border: 1px solid var(--line); border-radius: var(--r); padding: 18px; overflow-x: auto; font-size: 13px; line-height: 1.55; color: #cfe3f5; }
+pre { min-width: 0; max-width: 100%; margin: 0; background: #0a0d12; border: 1px solid var(--line); border-radius: var(--r); padding: 18px; overflow-x: auto; font-size: 13px; line-height: 1.55; color: #cfe3f5; }
 pre .k { color: #7fd0ff; } pre .v { color: #ffb27a; } pre .b { color: #ff8a80; }
-.split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
-@media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 860px) { .split { grid-template-columns: minmax(0, 1fr); } }
 .ticks { padding: 0; margin: 0; list-style: none; display: grid; gap: 12px; }
 .ticks li { padding-left: 26px; position: relative; color: var(--mute); }
 .ticks li::before { content: "✓"; position: absolute; left: 0; color: var(--ok); font-weight: 800; }
