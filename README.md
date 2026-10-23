@@ -3,7 +3,9 @@
 **Your Ring camera checks the drone drop zone before the drone arrives.**
 Ring sees the zone, Alexa tells the household, a smart pet door can fix the problem (with the owner's yes), and the drone carrier gets a HOLD signal. The carrier never receives video and never receives a "safe to land".
 
-- **Live demo (replay mode, no login, no token):** https://saurabh4269.github.io/dropzone-plus/
+- **Landing:** https://saurabh4269.github.io/dropzone-plus/
+- **App (PWA):** https://saurabh4269.github.io/dropzone-plus/app/
+- **Interactive judge demo (replay mode, no login, no token):** https://saurabh4269.github.io/dropzone-plus/demo.html
 - **Demo video:** _link added at submission_
 - Built for the Amazon Developer Hackathon 2026, **Ring track** ("Ring meets Alexa and other connected devices").
 
