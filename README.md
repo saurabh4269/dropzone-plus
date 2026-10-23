@@ -174,6 +174,15 @@ npm start                # http://localhost:8787  → REPLAY mode (no token need
 
 **CI.** [`ci/ci.yml`](ci/ci.yml) runs `npm test` on Node 20 and 22 (with ring-partner-sandbox installed, so the LIVE-mode integration tests run) plus both browser end-to-end suites. Our deploy token can't push files under `.github/workflows`, so the workflow lives in `ci/`; `scripts/enable-ci.sh` installs it once a maintainer runs `gh auth refresh -s workflow`. Every commit before submission was tested locally with the same commands.
 
+**Ring Developer Playground end to end, one command:**
+
+```bash
+export RING_ACCESS_TOKEN=...   # developer.amazon.com/ring/console/playground (lasts ~30 min)
+npm run playground             # prints PASS/FAIL per step, screenshots in /tmp/dropzone-playground-*.png
+```
+
+It calls the Ring Partner API directly (users/me, devices, status, capabilities, history, snapshot via the 303 flow). It then drives the **real PWA** in headless Chrome against `server.js`: Check now (Ring snapshot → verdict), **Live view over WHEP** (recvonly, the Playground's simulated DoorbellPro), **COCO-SSD detection on the live frame**, the carrier advisory, and the WHEP session `DELETE`. To dry-run without a token, point it at the mock (`RING_API_BASE=http://127.0.0.1:8686 RING_ACCESS_TOKEN=sandbox-token`); WHEP is then reported as SKIP because the mock can't stream video. Auth supports both modes of the official starter: `RING_ACCESS_TOKEN`, or `RING_REFRESH_TOKEN` + `RING_CLIENT_ID` + `RING_CLIENT_SECRET`.
+
 **LIVE mode with the Ring Developer Playground:**
 
 ```bash

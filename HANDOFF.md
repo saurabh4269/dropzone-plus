@@ -31,7 +31,9 @@ cd ../ring-partner-sandbox && ./scripts/enable-ci.sh
 Then check that the Actions tab is green in both repos. These commits come after any pinned SHA, which is harmless.
 
 ### 1. Get a Ring Playground token and record the real Ring segment (about 20 min)
-**Easiest path:** run `npm start`, open http://localhost:8787/app/ and choose **Use a Ring Developer Playground token** (paste the token). Pick the camera, draw the zone on the real Playground snapshot, then use **Check now** and **Live view**. The judge-demo LIVE panel at http://localhost:8787/demo.html also lists every Ring call with its status code.
+**One command first:** `export RING_ACCESS_TOKEN=<token>; npm run playground`. It prints PASS/FAIL for every step (API, snapshot, WHEP live view in the PWA, detection on the live frame, advisory, DELETE) and saves screenshots to `/tmp/dropzone-playground-*.png`. Paste its output into the "Playground run" section below.
+
+**Then for the video:** run `npm start`, open http://localhost:8787/app/ and choose **Use a Ring Developer Playground token** (paste the token). Pick the camera, draw the zone on the real Playground snapshot, then use **Check now** and **Live view**. The judge-demo LIVE panel at http://localhost:8787/demo.html also lists every Ring call with its status code.
 1. Open https://developer.amazon.com/ring/console/playground and copy the access token. It lasts about 30 minutes, so do steps 2–5 straight away.
 2. Check the API:
    ```bash
