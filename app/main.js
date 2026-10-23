@@ -126,7 +126,13 @@ async function scoreFrame(frame, zone) {
   if (!frame.readable) return evaluateZone({ detections: [], zone: zone.polygon, observedAt: frame.observedAt, media: { readable: false, reason: frame.reason }, source: frame.source });
   let detections;
   if (isDemo()) detections = demoDetections();
-  else {
+  else if (env.config?.vision?.rekognition?.enabled) { // AWS path: Amazon Rekognition on the server
+    const c = document.createElement('canvas'); c.width = imgW(frame.img); c.height = imgH(frame.img); c.getContext('2d').drawImage(frame.img, 0, 0);
+    const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.9));
+    const r = await fetch('../api/vision/rekognition', { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob }).then((x) => x.json()).catch(() => ({ ok: false }));
+    if (r.ok) { const [x, y, w, h] = fit(imgW(frame.img), imgH(frame.img)); detections = r.detections.map((d) => ({ ...d, box: [(x + d.box[0] * w) / W, (y + d.box[1] * h) / H, (d.box[2] * w) / W, (d.box[3] * h) / H] })); }
+  }
+  if (!isDemo() && !detections) {
     await loadDetector();
     const [x, y, w, h] = fit(imgW(frame.img), imgH(frame.img));
     detections = (await detect(frame.img)).map((p) => ({ label: p.class, score: p.score, box: [(x + p.bbox[0] * w / imgW(frame.img)) / W, (y + p.bbox[1] * h / imgH(frame.img)) / H, (p.bbox[2] * w / imgW(frame.img)) / W, (p.bbox[3] * h / imgH(frame.img)) / H] }));
