@@ -102,6 +102,12 @@ async function grabFrame(cameraId = S().camera?.id) {
     drawDemoYard(c.getContext('2d'), { packageAt: delivery.droppedAt ? delivery.dropPoint : null });
     return { img: c, observedAt: Date.now(), readable: true, source: 'demo (simulated)' };
   }
+  if (liveFrame?.video?.videoWidth) { // live WHEP stream running: analyse the current frame (always fresh)
+    const v = liveFrame.video;
+    const c = Object.assign(document.createElement('canvas'), { width: v.videoWidth, height: v.videoHeight });
+    c.getContext('2d').drawImage(v, 0, 0);
+    return { img: c, observedAt: Date.now(), readable: true, source: 'ring-live' };
+  }
   try {
     const r = await fetch(`../api/ring/snapshot?device=${encodeURIComponent(cameraId)}`, { cache: 'no-store' });
     if (!r.ok) { const j = await r.json().catch(() => ({})); return { readable: false, reason: j.reason || `Ring snapshot unavailable (HTTP ${r.status})`, observedAt: Date.now(), source: 'ring-snapshot' }; }
@@ -205,6 +211,10 @@ async function look() {
   const v = await scoreFrame(frame, z);
   if (delivery.session) delivery.session.observe(v);
   delivery.lastVerdict = v;
+  if (env.server) { // the server derives the carrier advisory (GET /api/v1/advisory) from this
+    const st = delivery.session?.state;
+    fetch('../api/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ verdict: v, delivery: st?.delivery || null, holdsIssued: st?.holdsIssued || 0 }) }).catch(() => {});
+  }
   return v;
 }
 
@@ -273,10 +283,11 @@ function setChrome({ title = 'DropZone+', tab = null, back = null, right = '' } 
   $('#appbarRight').innerHTML = right;
   document.querySelectorAll('.tabbar a').forEach((a) => (a.dataset.tab === tab ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
 }
+const ringLabel = () => (S().connection?.method === 'playground-token' ? 'Ring Playground' : env.config?.ring?.official === false ? 'mock Ring API' : 'Ring');
 function connBadge() {
   const c = S().connection;
   if (!c) return '';
-  return c.mode === 'live' ? '<span class="badge live">Ring · live</span>' : '<span class="badge sim">Demo home · simulated</span>';
+  return c.mode === 'live' ? `<span class="badge live">${ringLabel()} · live</span>` : '<span class="badge sim">Demo home · simulated</span>';
 }
 let cleanup = null;
 function renderRoute() {
@@ -537,7 +548,7 @@ function demoLive() {
 async function ringLive(video) {
   const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
   pc.addTransceiver('video', { direction: 'recvonly' }); pc.addTransceiver('audio', { direction: 'recvonly' }); // docs: recvonly only
-  pc.ontrack = (e) => { if (e.track.kind === 'video') { video.srcObject = e.streams[0]; video.play().catch(() => {}); liveFrame = { readable: true, live: (ctx) => video.videoWidth && ctx.drawImage(video, ...fit(video.videoWidth, video.videoHeight)), source: 'ring-live' }; } };
+  pc.ontrack = (e) => { if (e.track.kind === 'video') { video.srcObject = e.streams[0]; video.play().catch(() => {}); liveFrame = { readable: true, video, live: (ctx) => video.videoWidth && ctx.drawImage(video, ...fit(video.videoWidth, video.videoHeight)), source: 'ring-live' }; } };
   await pc.setLocalDescription(await pc.createOffer());
   await new Promise((r) => { if (pc.iceGatheringState === 'complete') return r(); const t = setTimeout(r, 3000); pc.onicegatheringstatechange = () => pc.iceGatheringState === 'complete' && (clearTimeout(t), r()); });
   const res = await fetch(`../api/ring/whep?device=${encodeURIComponent(S().camera.id)}`, { method: 'POST', headers: { 'Content-Type': 'application/sdp' }, body: pc.localDescription.sdp });
@@ -560,14 +571,14 @@ function renderCam() {
     }
     const rb = s?.receipt?.package_box; if (rb) { ctx.strokeStyle = '#3ee6ff'; ctx.lineWidth = 5; ctx.strokeRect(rb[0] * W - 6, rb[1] * H - 6, rb[2] * W + 12, rb[3] * H + 12); }
   } });
-  $('#camTag') && ($('#camTag').textContent = liveFrame ? (isDemo() ? 'Live · simulated' : 'Live · Ring') : frame ? (isDemo() ? 'Snapshot · simulated' : 'Ring snapshot') : '');
+  $('#camTag') && ($('#camTag').textContent = liveFrame ? (isDemo() ? 'Live · simulated' : `Live · ${ringLabel()}`) : frame ? (isDemo() ? 'Snapshot · simulated' : `Snapshot · ${ringLabel()}`) : '');
 }
 function renderLive() {
   if (!homeCtx) return;
   const s = delivery.session?.state;
   const v = freshen(s?.verdict || delivery.lastVerdict);
   const hero = $('#hero'); if (!hero) return;
-  const reason = v.reasons?.length ? v.reasons.map((r) => r.label ? `${r.label} ${r.where === 'near' ? 'next to' : 'in'} the zone` : r.code.replaceAll('_', ' ').toLowerCase()).join(', ') : v.status === STATUS.CLEAR ? 'Nothing in or near the zone' : '';
+  const reason = v.reasons?.length ? v.reasons.map((r) => { const o = (v.objects || []).find((x) => x.label === r.label); return r.label ? `${r.label} ${r.where === 'near' ? 'next to' : 'in'} the zone${o && !v.scripted ? ` (${Math.round(o.score * 100)}% sure)` : ''}` : r.code.replaceAll('_', ' ').toLowerCase(); }).join(', ') : v.status === STATUS.CLEAR ? 'Nothing in or near the zone' : '';
   let eta = '';
   if (s?.delivery) {
     const left = (s.delivery.etaAt - dNow()) / 1000;
