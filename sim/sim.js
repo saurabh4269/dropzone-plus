@@ -16,12 +16,18 @@ let t = Math.min(T_MAX, Math.max(0, Number(params.get('t')) || 0));
 let playing = params.get('play') !== '0';
 let speed = Number(params.get('speed')) || 4;
 const receipts = {};
+const LIGHT = matchMedia('(prefers-color-scheme: light)');
 
 // ---------- renderers and cameras ----------
 function makeRenderer(canvas, w, h) {
   const r = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
   r.setPixelRatio(1);
   r.setSize(w, h, false);
+  r.outputColorSpace = THREE.SRGBColorSpace;
+  r.toneMapping = THREE.ACESFilmicToneMapping;
+  r.toneMappingExposure = 1.0;
+  r.shadowMap.enabled = true;
+  r.shadowMap.type = THREE.PCFSoftShadowMap;
   return r;
 }
 const ringR = makeRenderer($('ringGl'), 960, 540);
@@ -36,113 +42,205 @@ const overCam = new THREE.PerspectiveCamera(50, 16 / 9, 0.1, 600);
 overCam.position.set(11, 9, 19); overCam.lookAt(-0.5, 1.5, 5);
 overCam.layers.enable(1);
 
+// ---------- textures (CC0, see ./tex/CREDITS.md) ----------
+const loader = new THREE.TextureLoader();
+const load = (name) => loader.loadAsync(`./tex/${name}.jpg`);
+const [skyT, grassC, grassN, fenceC, fenceN, sidingC, sidingN, patioN, copingC, copingN] = await Promise.all(
+  ['sky', 'grass_col', 'grass_nor', 'fence_col', 'fence_nor', 'siding_col', 'siding_nor', 'patio_nor', 'coping_col', 'coping_nor'].map(load));
+// tiled(map, repeatX, repeatY, rotation): a per-surface copy so each surface keeps real-world texel size
+function tiled(src, rx, ry, rot = 0, color = false) {
+  const t = src.clone();
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.center.set(0.5, 0.5); t.rotation = rot;
+  t.anisotropy = 8; t.colorSpace = color ? THREE.SRGBColorSpace : THREE.NoColorSpace; t.needsUpdate = true;
+  return t;
+}
+const pbr = (src, nor, rx, ry, opts = {}) => new THREE.MeshStandardMaterial({
+  map: tiled(src, rx, ry, opts.rot, true), normalMap: tiled(nor, rx, ry, opts.rot), normalScale: new THREE.Vector2(opts.ns ?? 1, opts.ns ?? 1),
+  roughness: opts.rough ?? 0.9, metalness: 0, color: opts.tint ?? 0xffffff,
+});
+
 // ---------- scene ----------
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xa9cbe8);
-scene.fog = new THREE.Fog(0xa9cbe8, 60, 220);
-scene.add(new THREE.HemisphereLight(0xdfefff, 0x4a6b2a, 1.4));
-const sun = new THREE.DirectionalLight(0xfff3dd, 1.6); sun.position.set(-8, 20, 12); scene.add(sun);
+skyT.mapping = THREE.EquirectangularReflectionMapping; skyT.colorSpace = THREE.SRGBColorSpace;
+scene.background = skyT;
+scene.environment = skyT;
+scene.environmentIntensity = 0.7;
+scene.backgroundIntensity = 0.95;
+scene.fog = new THREE.Fog(0xc4d3e0, 70, 260);
+scene.add(new THREE.HemisphereLight(0xdfefff, 0x50602e, 0.35));
+const sun = new THREE.DirectionalLight(0xfff1dc, 2.6);
+sun.position.set(-9, 22, 16); sun.target.position.set(0, 0, 8); scene.add(sun, sun.target);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -17, right: 17, top: 17, bottom: -17, near: 1, far: 60 });
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03; sun.shadow.radius = 3;
 
-const mat = (color, extra = {}) => new THREE.MeshLambertMaterial({ color, ...extra });
+const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.8, metalness: 0, ...extra });
 function box(w, h, d, color, x, y, z, parent = scene) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof color === 'number' ? mat(color) : color);
   m.position.set(x, y, z); parent.add(m); return m;
 }
+function add(geo, material, x, y, z, parent = scene) {
+  const m = new THREE.Mesh(geo, typeof material === 'number' ? mat(material) : material);
+  m.position.set(x, y, z); parent.add(m); return m;
+}
 function onLayer1(o) { o.layers.set(1); o.traverse((c) => c.layers.set(1)); return o; }
+// deterministic pseudo-random in [0,1)
+const rnd = (i) => { const h = Math.sin(i * 12.9898 + 78.233) * 43758.5453; return h - Math.floor(h); };
 
-// ground: lawn inside the fence, rougher grass outside
-const lawn = new THREE.Mesh(new THREE.PlaneGeometry(YARD.x1 - YARD.x0, YARD.z1), mat(0x5f9a3c));
-lawn.rotation.x = -Math.PI / 2; lawn.position.set(0, 0, YARD.z1 / 2); scene.add(lawn);
-const outer = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), mat(0x4e7d33));
-outer.rotation.x = -Math.PI / 2; outer.position.y = -0.02; scene.add(outer);
-for (let i = 0; i < 14; i++) { // mowing stripes
-  const s = new THREE.Mesh(new THREE.PlaneGeometry((YARD.x1 - YARD.x0) / 14, YARD.z1), mat(i % 2 ? 0x67a243 : 0x5c963a));
-  s.rotation.x = -Math.PI / 2; s.position.set(YARD.x0 + ((i + 0.5) * (YARD.x1 - YARD.x0)) / 14, 0.002, YARD.z1 / 2); scene.add(s);
+// ground: textured lawn inside the fence with faint mowing stripes, rougher grass outside
+const GRASS_M = 1.6; // metres per grass tile
+{
+  const W = YARD.x1 - YARD.x0, n = 10;
+  for (let i = 0; i < n; i++) {
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(W / n, YARD.z1),
+      pbr(grassC, grassN, W / n / GRASS_M, YARD.z1 / GRASS_M, { tint: i % 2 ? 0xffffff : 0xdfe9cf, rough: 0.95 }));
+    s.rotation.x = -Math.PI / 2; s.position.set(YARD.x0 + ((i + 0.5) * W) / n, 0, YARD.z1 / 2); scene.add(s);
+  }
+  const outer = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), pbr(grassC, grassN, 400 / 2.4, 400 / 2.4, { tint: 0xbfcf9f, rough: 1 }));
+  outer.rotation.x = -Math.PI / 2; outer.position.y = -0.02; scene.add(outer);
 }
 // patio slab by the house
-box(7, 0.04, 2.4, 0xb9b2a5, -2.5, 0.02, 1.2);
+box(7, 0.05, 2.4, pbr(copingC, copingN, 7 / 2.4, 2.4 / 2.4, { tint: 0xe4e0d8, rough: 0.85 }), -2.5, 0.025, 1.2);
 
 // drop zone: painted 10 x 10 ft square with a centre mark
 {
-  const [cx, cz] = ZONE_CENTER, s = ZONE_SIZE, w = 0.07, paint = mat(0xf4f4ee);
+  const [cx, cz] = ZONE_CENTER, s = ZONE_SIZE, w = 0.07, paint = mat(0xf4f4ee, { roughness: 0.7 });
   box(s, 0.01, w, paint, cx, 0.01, cz - s / 2); box(s, 0.01, w, paint, cx, 0.01, cz + s / 2);
   box(w, 0.01, s, paint, cx - s / 2, 0.01, cz); box(w, 0.01, s, paint, cx + s / 2, 0.01, cz);
   const c1 = box(0.9, 0.01, 0.07, paint, cx, 0.011, cz); c1.rotation.y = Math.PI / 4;
   const c2 = box(0.9, 0.01, 0.07, paint, cx, 0.011, cz); c2.rotation.y = -Math.PI / 4;
 }
-// pool: coping, water, darker inner wall
+// pool: paver coping frame, tiled basin, glossy water reflecting the sky
 {
-  const w = POOL.x1 - POOL.x0, d = POOL.z1 - POOL.z0, cx = (POOL.x0 + POOL.x1) / 2, cz = (POOL.z0 + POOL.z1) / 2;
-  box(w + 0.5, 0.08, d + 0.5, 0xe7e2d6, cx, 0.04, cz);
-  box(w, 0.09, d, mat(0x2f9fd6, { emissive: 0x0b3b5c }), cx, 0.05, cz);
-  box(w - 0.8, 0.095, 0.08, 0x8fd3f2, cx, 0.052, cz - 0.6); box(w - 1.4, 0.095, 0.06, 0x8fd3f2, cx + 0.2, 0.052, cz + 1.1);
+  const w = POOL.x1 - POOL.x0, d = POOL.z1 - POOL.z0, cx = (POOL.x0 + POOL.x1) / 2, cz = (POOL.z0 + POOL.z1) / 2, c = 0.35;
+  const cop = (len, deep, x, z) => box(len, 0.08, deep, pbr(copingC, copingN, len / 1.2, deep / 1.2, { tint: 0xf2efe8, rough: 0.8 }), x, 0.04, z);
+  cop(w + 2 * c, c, cx, POOL.z0 - c / 2); cop(w + 2 * c, c, cx, POOL.z1 + c / 2);
+  cop(c, d, POOL.x0 - c / 2, cz); cop(c, d, POOL.x1 + c / 2, cz);
+  box(w, 0.04, d, mat(0x7fc6dc, { roughness: 0.6 }), cx, 0.0, cz); // basin floor seen through the water
+  const water = box(w, 0.02, d, new THREE.MeshPhysicalMaterial({
+    color: 0x1f8fbf, roughness: 0.04, metalness: 0, transparent: true, opacity: 0.9, clearcoat: 1, clearcoatRoughness: 0.05,
+    normalMap: tiled(patioN, w / 1.5, d / 1.5), normalScale: new THREE.Vector2(0.25, 0.25),
+  }), cx, 0.055, cz);
+  water.receiveShadow = true;
 }
-// fence
+// fence: continuous vertical boards (textured), posts and a top cap
 {
-  const wood = mat(0x9a7652);
-  const rail = (len, x, z, alongX) => { for (const y of [0.45, 1.35]) box(alongX ? len : 0.06, 0.1, alongX ? 0.06 : len, wood, x, y, z); };
-  rail(YARD.x1 - YARD.x0, 0, YARD.z1, true); rail(YARD.z1, YARD.x0, YARD.z1 / 2, false); rail(YARD.z1, YARD.x1, YARD.z1 / 2, false);
-  for (let x = YARD.x0; x <= YARD.x1 + 1e-6; x += 0.5) box(0.12, 1.6, 0.04, wood, x, 0.8, YARD.z1);
-  for (let z = 0.5; z <= YARD.z1; z += 0.5) { box(0.04, 1.6, 0.12, wood, YARD.x0, 0.8, z); box(0.04, 1.6, 0.12, wood, YARD.x1, 0.8, z); }
+  const H = 1.7, BOARD = 1.1; // metres per texture tile
+  const panel = (len, x, z, alongX) => {
+    const m = pbr(fenceC, fenceN, len / BOARD, H / BOARD, { rot: Math.PI / 2, rough: 0.85, tint: 0xf0e4d6 });
+    box(alongX ? len : 0.04, H, alongX ? 0.04 : len, m, x, H / 2, z);
+    const cap = mat(0x6e5440, { roughness: 0.8 });
+    box(alongX ? len : 0.09, 0.05, alongX ? 0.09 : len, cap, x, H + 0.025, z);
+  };
+  panel(YARD.x1 - YARD.x0, 0, YARD.z1, true); panel(YARD.z1, YARD.x0, YARD.z1 / 2, false); panel(YARD.z1, YARD.x1, YARD.z1 / 2, false);
+  const post = mat(0x6e5440, { roughness: 0.8 });
+  for (let x = YARD.x0; x <= YARD.x1 + 1e-6; x += 2.5) box(0.1, H + 0.15, 0.1, post, x, (H + 0.15) / 2, YARD.z1 - 0.05);
+  for (let z = 2.5; z <= YARD.z1; z += 2.5) { box(0.1, H + 0.15, 0.1, post, YARD.x0 + 0.05, (H + 0.15) / 2, z); box(0.1, H + 0.15, 0.1, post, YARD.x1 - 0.05, (H + 0.15) / 2, z); }
 }
-// house wall with back door, window, pet door, and the Ring camera on the wall
+// house wall with lap siding, back door, window, pet door, and the Ring camera on the wall
 {
-  box(20.4, 3.4, 0.3, 0xe9dcc6, 0, 1.7, -0.15);
-  box(20.8, 0.3, 1.2, 0x6d4c41, 0, 3.5, -0.3); // eave
-  box(1.0, 2.1, 0.06, 0x7b5e45, -5.4, 1.05, 0.02); // back door
-  box(1.8, 1.1, 0.06, 0x9cc7e0, 3.2, 1.7, 0.02); box(1.9, 0.08, 0.1, 0xffffff, 3.2, 1.12, 0.05);
-  box(0.46, 0.56, 0.05, 0x3a3a3a, PET_DOOR[0], 0.3, 0.02); box(0.36, 0.44, 0.06, 0x5b6770, PET_DOOR[0], 0.28, 0.03);
+  box(20.4, 3.4, 0.3, pbr(sidingC, sidingN, 20.4 / 1.4, 3.4 / 1.4, { rot: Math.PI / 2, tint: 0xf3ece0, rough: 0.75 }), 0, 1.7, -0.15);
+  box(20.8, 0.3, 1.2, mat(0x4a4f55, { roughness: 0.9 }), 0, 3.5, -0.3); // eave
+  const trim = mat(0xf7f7f4, { roughness: 0.5 });
+  box(1.0, 2.1, 0.06, mat(0x5d4532, { roughness: 0.6 }), -5.4, 1.05, 0.02); // back door
+  box(1.16, 0.08, 0.08, trim, -5.4, 2.14, 0.03); box(0.08, 2.14, 0.08, trim, -5.94, 1.07, 0.03); box(0.08, 2.14, 0.08, trim, -4.86, 1.07, 0.03);
+  add(new THREE.SphereGeometry(0.035, 12, 8), mat(0xc9a04a, { metalness: 1, roughness: 0.3 }), -5.05, 1.0, 0.07);
+  box(1.8, 1.1, 0.04, new THREE.MeshPhysicalMaterial({ color: 0x223040, roughness: 0.05, metalness: 0.1, clearcoat: 1 }), 3.2, 1.7, 0.02); // glass
+  box(1.96, 0.08, 0.1, trim, 3.2, 2.29, 0.05); box(1.96, 0.1, 0.12, trim, 3.2, 1.11, 0.06);
+  box(0.08, 1.2, 0.1, trim, 2.26, 1.7, 0.05); box(0.08, 1.2, 0.1, trim, 4.14, 1.7, 0.05); box(0.05, 1.1, 0.06, trim, 3.2, 1.7, 0.04);
+  box(0.46, 0.56, 0.05, mat(0x3a3a3a, { roughness: 0.5 }), PET_DOOR[0], 0.3, 0.02); box(0.36, 0.44, 0.06, mat(0x5b6770, { roughness: 0.3, transparent: true, opacity: 0.9 }), PET_DOOR[0], 0.28, 0.03);
   const cam = new THREE.Group();
-  box(0.12, 0.16, 0.08, 0x222831, 0, 0, 0, cam); box(0.06, 0.06, 0.02, 0x4fc3f7, 0, 0.01, 0.05, cam);
+  box(0.12, 0.16, 0.08, mat(0x1d2127, { roughness: 0.4 }), 0, 0, 0, cam);
+  add(new THREE.CircleGeometry(0.025, 16), mat(0x0a0c10, { roughness: 0.1 }), 0, 0.02, 0.041, cam);
   cam.position.set(RING_CAM.pos[0], RING_CAM.pos[1], 0.04); scene.add(cam);
-  // owner-visible Ring frustum hint in the overview only
 }
-// some deterministic shrubs along the fence
-for (let i = 0; i < 9; i++) {
-  const b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5 + (i % 3) * 0.15, 0), mat(0x3f7a2e));
-  b.position.set(-8.6 + i * 2.1, 0.45, 17.2 - (i % 2) * 0.3); scene.add(b);
+// planting: hedge-like shrub clusters along the fence and a few trees beyond it
+function bush(x, y, z, r, seed, parent = scene) {
+  const g = new THREE.Group();
+  const greens = [0x35602a, 0x3f6f2f, 0x2f5524, 0x4a7a34];
+  const n = 4 + Math.floor(rnd(seed) * 3);
+  for (let k = 0; k < n; k++) {
+    const geo = new THREE.IcosahedronGeometry(r * (0.55 + rnd(seed + k) * 0.45), 2);
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) { const f = 1 + (rnd(seed * 31 + i) - 0.5) * 0.18; pos.setXYZ(i, pos.getX(i) * f, pos.getY(i) * f, pos.getZ(i) * f); }
+    geo.computeVertexNormals();
+    const a = rnd(seed + k * 7) * Math.PI * 2, d = r * 0.55 * rnd(seed + k * 3);
+    add(geo, mat(greens[(seed + k) % 4], { roughness: 0.95 }), Math.cos(a) * d, r * (0.6 + rnd(seed + k * 5) * 0.4), Math.sin(a) * d, g);
+  }
+  g.position.set(x, y, z); parent.add(g); return g;
 }
+for (let i = 0; i < 16; i++) bush(-9.2 + i * 1.22, 0, 17.35 - (i % 2) * 0.25, 0.55 + rnd(i) * 0.25, i + 1);
+for (let i = 0; i < 6; i++) { bush(-9.35, 0, 9 + i * 1.4, 0.5 + rnd(i + 40) * 0.2, i + 40); bush(9.35, 0, 11 + i * 1.2, 0.5 + rnd(i + 60) * 0.2, i + 60); }
+function tree(x, z, h, seed) {
+  add(new THREE.CylinderGeometry(0.12, 0.18, h * 0.55, 10), mat(0x5a4330, { roughness: 1 }), x, h * 0.275, z);
+  bush(x, h * 0.42, z, h * 0.28, seed);
+}
+[[-7, 22, 7, 3], [-1.5, 24, 8.5, 9], [5, 21.5, 6.5, 17], [11.5, 19, 7.5, 23], [-12.5, 15, 6, 29]].forEach(([x, z, h, s]) => tree(x, z, h, s));
 
 // ---------- actors ----------
+const cap = (r, len, color, x, y, z, parent, rz = 0, rx = 0) => {
+  const m = add(new THREE.CapsuleGeometry(r, len, 6, 14), color, x, y, z, parent); m.rotation.z = rz; m.rotation.x = rx; return m;
+};
 function makeDog() {
-  const g = new THREE.Group(), fur = mat(0x9b6a3c), dark = mat(0x4b3020);
-  box(0.62, 0.26, 0.26, fur, 0, 0.42, 0, g); box(0.24, 0.22, 0.2, fur, 0.38, 0.6, 0, g); box(0.1, 0.08, 0.1, dark, 0.53, 0.56, 0, g);
-  for (const [x, z] of [[0.22, 0.09], [0.22, -0.09], [-0.22, 0.09], [-0.22, -0.09]]) box(0.07, 0.3, 0.07, fur, x, 0.15, z, g);
-  const tail = box(0.24, 0.05, 0.05, fur, -0.4, 0.6, 0, g); tail.rotation.z = 0.7;
+  // golden retriever-ish: capsule body, legs, head with snout and ears; faces +x
+  const g = new THREE.Group(), fur = mat(0xb98446, { roughness: 0.95 }), dark = mat(0x2a1d14, { roughness: 0.6 }), light = mat(0xd2a466, { roughness: 0.95 });
+  cap(0.15, 0.42, fur, 0, 0.47, 0, g, Math.PI / 2);
+  cap(0.12, 0.12, light, 0.28, 0.58, 0, g, -0.9); // chest / neck
+  add(new THREE.SphereGeometry(0.13, 18, 14), fur, 0.42, 0.7, 0, g);
+  cap(0.065, 0.1, light, 0.55, 0.66, 0, g, Math.PI / 2);
+  add(new THREE.SphereGeometry(0.03, 10, 8), dark, 0.64, 0.67, 0, g);
+  for (const z of [-0.1, 0.1]) { const e = cap(0.045, 0.1, mat(0x9a6a36, { roughness: 0.95 }), 0.38, 0.66, z, g, 0.2); e.rotation.x = z > 0 ? 0.35 : -0.35; }
+  for (const [x, z] of [[0.2, 0.08], [0.2, -0.08], [-0.22, 0.08], [-0.22, -0.08]]) cap(0.05, 0.24, fur, x, 0.17, z, g);
+  cap(0.035, 0.28, fur, -0.42, 0.62, 0, g, 0.9);
   scene.add(g); return g;
 }
 function makeKid() {
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.45, 4, 8), mat(0xd94848)); body.position.y = 0.72; g.add(body);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), mat(0xe9b98f)); head.position.y = 1.12; g.add(head);
-  for (const x of [-0.07, 0.07]) box(0.09, 0.42, 0.09, 0x2b4c8c, x, 0.21, 0, g);
+  // child in a red hoodie and jeans, no face detail
+  const g = new THREE.Group(), hoodie = mat(0xc63a3a, { roughness: 0.9 }), jeans = mat(0x34507e, { roughness: 0.9 }), skin = mat(0xd9a77f, { roughness: 0.7 });
+  cap(0.15, 0.3, hoodie, 0, 0.78, 0, g);
+  for (const z of [-0.2, 0.2]) cap(0.05, 0.32, hoodie, 0, 0.76, z, g, 0, z > 0 ? -0.12 : 0.12);
+  add(new THREE.SphereGeometry(0.12, 18, 14), skin, 0, 1.16, 0, g);
+  const hair = add(new THREE.SphereGeometry(0.125, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), mat(0x3b2a1e, { roughness: 0.9 }), 0, 1.17, 0, g); hair.rotation.z = 0.25;
+  for (const z of [-0.07, 0.07]) { cap(0.06, 0.34, jeans, 0, 0.3, z, g); box(0.16, 0.06, 0.09, mat(0xeeeeee, { roughness: 0.6 }), 0.03, 0.03, z, g); }
   scene.add(g); return g;
 }
 function makeUmbrella() {
-  const g = new THREE.Group();
-  box(0.05, 2.1, 0.05, 0xdddddd, 0, 1.05, 0, g);
-  const c = new THREE.Mesh(new THREE.ConeGeometry(1.15, 0.5, 8, 1, true), mat(0xf2a33a, { side: THREE.DoubleSide })); c.position.y = 2.05; g.add(c);
-  box(0.8, 0.04, 0.8, 0xffffff, 0, 0.72, 0, g); box(0.05, 0.7, 0.05, 0xffffff, 0, 0.36, 0, g); // little table
+  const g = new THREE.Group(), metal = mat(0xd8dadc, { metalness: 0.8, roughness: 0.35 });
+  add(new THREE.CylinderGeometry(0.025, 0.025, 2.1, 10), metal, 0, 1.05, 0, g);
+  const c = add(new THREE.ConeGeometry(1.15, 0.45, 16, 1, true), mat(0xe9e2d0, { side: THREE.DoubleSide, roughness: 0.95 }), 0, 2.05, 0, g);
+  c.castShadow = true;
+  add(new THREE.CylinderGeometry(0.42, 0.42, 0.03, 24), mat(0xf4f4f2, { roughness: 0.4 }), 0, 0.72, 0, g); // little table
+  add(new THREE.CylinderGeometry(0.03, 0.03, 0.7, 10), metal, 0, 0.36, 0, g);
+  add(new THREE.CylinderGeometry(0.22, 0.22, 0.02, 20), metal, 0, 0.01, 0, g);
   scene.add(g); return g;
 }
 const actorMeshes = { dog: makeDog(), kid: makeKid(), umbrella: makeUmbrella() };
 
 function makeDrone() {
-  const g = new THREE.Group(), white = mat(0xf2f4f7), grey = mat(0x56606b);
-  box(0.7, 0.2, 0.7, white, 0, 0, 0, g); box(0.3, 0.1, 0.3, grey, 0, -0.14, 0, g);
+  const g = new THREE.Group(), shell = mat(0xeef1f4, { roughness: 0.35, metalness: 0.1 }), grey = mat(0x3d444c, { roughness: 0.5, metalness: 0.3 });
+  const body = add(new THREE.SphereGeometry(0.4, 24, 16), shell, 0, 0, 0, g); body.scale.set(1, 0.32, 1);
+  add(new THREE.CylinderGeometry(0.16, 0.18, 0.1, 18), grey, 0, -0.14, 0, g);
   const rotors = [];
   for (const [x, z] of [[0.75, 0.75], [-0.75, 0.75], [0.75, -0.75], [-0.75, -0.75]]) {
-    const arm = box(1.0, 0.06, 0.08, grey, x / 2, 0.05, z / 2, g); arm.rotation.y = Math.atan2(-z, x);
-    const r = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.02, 20), new THREE.MeshLambertMaterial({ color: 0x222222, transparent: true, opacity: 0.45 }));
-    r.position.set(x, 0.1, z); g.add(r); rotors.push(r);
-    box(0.05, 0.05, 0.05, x > 0 ? 0x2ecc71 : 0xe74c3c, x, 0.0, z, g);
+    const arm = add(new THREE.CylinderGeometry(0.035, 0.035, 1.06, 10), grey, x / 2, 0.03, z / 2, g);
+    arm.rotation.z = Math.PI / 2; arm.rotation.y = Math.atan2(-z, x); arm.rotation.order = 'YZX';
+    add(new THREE.CylinderGeometry(0.07, 0.07, 0.1, 14), grey, x, 0.06, z, g);
+    const r = add(new THREE.CylinderGeometry(0.42, 0.42, 0.01, 32), new THREE.MeshStandardMaterial({ color: 0x1a1a1a, transparent: true, opacity: 0.28, roughness: 0.5, depthWrite: false }), x, 0.12, z, g);
+    rotors.push(r);
+    add(new THREE.SphereGeometry(0.025, 8, 6), new THREE.MeshStandardMaterial({ color: x > 0 ? 0x2ecc71 : 0xe74c3c, emissive: x > 0 ? 0x2ecc71 : 0xe74c3c, emissiveIntensity: 1.5 }), x, -0.01, z, g);
   }
-  const pkg = box(0.5, 0.3, 0.4, 0xc49a6c, 0, -0.45, 0, g);
+  const cardboard = mat(0xb68b5a, { roughness: 0.95 });
+  const pkg = box(0.5, 0.3, 0.4, cardboard, 0, -0.45, 0, g);
+  box(0.51, 0.31, 0.06, mat(0x8a6236, { roughness: 0.7 }), 0, 0, 0, pkg);
   scene.add(g); return { g, rotors, pkg };
 }
 const drone = makeDrone();
-const groundBox = box(0.5, 0.3, 0.4, 0xc49a6c, 0, 0, 0); groundBox.visible = false;
-const tape = box(0.51, 0.02, 0.07, 0x6b4a2b, 0, 0.155, 0, groundBox); tape.visible = true;
+const groundBox = box(0.5, 0.3, 0.4, mat(0xb68b5a, { roughness: 0.95 }), 0, 0, 0); groundBox.visible = false;
+const tape = box(0.51, 0.31, 0.06, mat(0x8a6236, { roughness: 0.7 }), 0, 0, 0, groundBox); tape.visible = true;
+
+// shadows: everything solid casts and receives (sprites, particles and lines excluded)
+scene.traverse((o) => { if (o.isMesh && !o.material.transparent) { o.castShadow = true; o.receiveShadow = true; } });
 
 // downwash: ground ring + dust/grass particles
 const washRing = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.1, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false }));
@@ -150,9 +248,10 @@ washRing.rotation.x = -Math.PI / 2; scene.add(washRing);
 const N_PART = 260;
 const partGeo = new THREE.BufferGeometry();
 partGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N_PART * 3), 3));
-const parts = new THREE.Points(partGeo, new THREE.PointsMaterial({ color: 0xe6f2c8, size: 0.09, transparent: true, opacity: 0.85, depthWrite: false }));
+const parts = new THREE.Points(partGeo, new THREE.PointsMaterial({ color: 0xc9d6a8, size: 0.06, transparent: true, opacity: 0.85, depthWrite: false }));
 scene.add(parts);
-const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.9, 24), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false }));
+// real shadow mapping now draws the drone's shadow; keep a faint contact blur only when it is low
+const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.9, 24), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.12, depthWrite: false }));
 shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
 
 // drone camera footprint on the ground (overview only)
@@ -182,7 +281,7 @@ function pose(sc, tt) {
   // downwash strength grows as the drone gets low
   const k = Math.max(0, Math.min(1, (10 - dy) / 6));
   washRing.visible = parts.visible = k > 0.01;
-  shadow.visible = dy < 14; shadow.position.set(dx, 0.015, dz); shadow.material.opacity = 0.3 * Math.max(0, 1 - dy / 14);
+  shadow.visible = dy < 14; shadow.position.set(dx, 0.015, dz); shadow.material.opacity = 0.14 * Math.max(0, 1 - dy / 8);
   if (k > 0.01) {
     const ph = (tt * 0.9) % 1;
     washRing.position.set(dx, 0.03, dz);
@@ -214,6 +313,7 @@ function droneActive(sc, tt) {
 
 // ---------- proof of drop on rendered 160x90 Ring frames ----------
 const rt = new THREE.WebGLRenderTarget(160, 90);
+rt.texture.colorSpace = THREE.SRGBColorSpace;
 function ringFrame(sc, tt) {
   pose(sc, tt);
   ringR.setRenderTarget(rt); ringR.render(scene, ringCam); ringR.setRenderTarget(null);
@@ -257,9 +357,10 @@ function drawDets(ctx, dets, W, H, colorFor) {
   }
 }
 function banner(ctx, W, text, sub) {
-  ctx.fillStyle = 'rgba(8,12,18,.72)'; ctx.fillRect(0, 0, W, 50);
-  ctx.fillStyle = '#ffd54a'; ctx.font = '700 16px system-ui, sans-serif'; ctx.fillText(text, 12, 21);
-  ctx.fillStyle = '#e8eef5'; ctx.font = '13px system-ui, sans-serif'; ctx.fillText(sub, 12, 41);
+  const lt = LIGHT.matches;
+  ctx.fillStyle = lt ? 'rgba(255,255,255,.84)' : 'rgba(8,12,18,.72)'; ctx.fillRect(0, 0, W, 50);
+  ctx.fillStyle = lt ? '#121821' : '#ffd54a'; ctx.font = '700 16px system-ui, sans-serif'; ctx.fillText(text, 12, 21);
+  ctx.fillStyle = lt ? '#3d4756' : '#e8eef5'; ctx.font = '13px system-ui, sans-serif'; ctx.fillText(sub, 12, 41);
 }
 
 // ---------- UI ----------
@@ -287,7 +388,7 @@ function frame() {
   ringR.render(scene, ringCam);
   overR.render(scene, overCam);
   const active = droneActive(scenario, t);
-  if (active) droneR.render(scene, droneCam); else { droneR.setClearColor(0x161b22); droneR.clear(); }
+  if (active) droneR.render(scene, droneCam); else { droneR.setClearColor(LIGHT.matches ? 0xdfe5ec : 0x2a3038); droneR.clear(); }
 
   // Ring overlay
   const ro = $('ringOv').getContext('2d'), W = 960, H = 540;
@@ -296,7 +397,7 @@ function frame() {
   drawPoly(ro, RING_ZONE, W, H, '#ffd54a', [10, 6], 'drop zone (owner-drawn)');
   const ringDets = detectionsFor(RING_CAM, actors);
   drawDets(ro, ringDets, W, H, () => '#ff8a65');
-  banner(ro, W, 'FIXED RING CAMERA · SIMULATED 3D SCENE', 'House wall, 2.4 m up, 110° wide lens · boxes = simulated ground-truth detector');
+  banner(ro, W, 'FIXED RING CAMERA', 'House wall, 2.4 m up, 110° wide lens · boxes = ground-truth detector from the model');
 
   // Drone overlay
   const dov = $('droneOv').getContext('2d'), D = 540;
@@ -306,20 +407,20 @@ function frame() {
     const dDets = detectionsFor(cam, actors);
     drawDets(dov, dDets, D, D, () => '#ff5252');
     const safe = dDets.length === 0;
-    banner(dov, D, 'DRONE DOWN-LOOKING CAMERA · SIMULATED', `${cam.pos[1].toFixed(1)} m up, 60° FOV · footprint ≈ ${(2 * cam.pos[1] * Math.tan(Math.PI / 6)).toFixed(1)} m wide`);
+    banner(dov, D, 'DRONE DOWN-LOOKING CAMERA', `${cam.pos[1].toFixed(1)} m up, 60° FOV · footprint ≈ ${(2 * cam.pos[1] * Math.tan(Math.PI / 6)).toFixed(1)} m wide`);
     dov.fillStyle = safe ? 'rgba(46,160,67,.9)' : 'rgba(218,54,51,.92)'; dov.fillRect(0, D - 64, D, 64);
     dov.fillStyle = '#fff'; dov.font = '700 18px system-ui, sans-serif';
     dov.fillText(safe ? 'Drone-side check: nothing in view → safe to drop' : `Drone-side check: ${dDets.map((d) => d.label).join(', ')} in view → ABORT`, 12, D - 38);
     dov.font = '13px system-ui, sans-serif'; dov.fillText(droneFootprint(p)[2] < POOL.x0 ? 'The pool is outside this field of view: the drone cannot see it.' : 'Pool at the edge of view now; at 13 ft it drops out of view.', 12, D - 16);
   } else {
-    banner(dov, D, 'DRONE DOWN-LOOKING CAMERA · SIMULATED', 'Active only on final approach (≈ 13 ft above the drop point)');
-    dov.fillStyle = '#8b949e'; dov.font = '600 18px system-ui, sans-serif';
+    banner(dov, D, 'DRONE DOWN-LOOKING CAMERA', 'Active only on final approach (≈ 13 ft above the drop point)');
+    dov.fillStyle = LIGHT.matches ? '#5b6675' : '#8b949e'; dov.font = '600 18px system-ui, sans-serif';
     const msg = p < P.HOVER_POINT ? `Not yet over the drop point (${String(step?.phase || "approaching").toLowerCase()})` : step?.aborted ? 'Aborted: leaving with the package' : 'Departed';
     dov.fillText(msg, 24, D / 2);
   }
   const oo = $('overOv').getContext('2d');
   oo.clearRect(0, 0, 960, 540);
-  banner(oo, 960, 'OVERVIEW (not a sensor) · SIMULATED 3D SCENE', 'Magenta square = drone camera footprint during the final approach');
+  banner(oo, 960, 'OVERVIEW (not a sensor)', 'Magenta square = drone camera footprint during the final approach');
 
   // Status panel
   const v = step.verdict;

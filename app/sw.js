@@ -1,10 +1,11 @@
 // DropZone service worker: offline app shell. Ring/API calls always go to the network.
-const VERSION = 'dz-app-v6';
+const VERSION = 'dz-app-v7';
 const SHELL = [
   './', './index.html', './app.css', './main.js', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
   '../core/zone.js', '../core/engine.js', '../core/advisory.js', '../core/alexa.js', '../core/petdoor.js', '../core/lights.js', '../core/sprinkler.js', '../core/changes.js',
   '../scene.js', '../detector.js',
+  '../assets/yard/day.jpg', '../assets/yard/dusk-dark.jpg', '../assets/yard/dusk-lit.jpg', '../assets/yard/dog.png', '../assets/yard/kid.png', '../assets/yard/package.png', '../assets/yard/drone.png',
   './partners/primeair.png', './partners/wing.png', './partners/zipline.png', './partners/flytrex.png', './partners/manna.png',
 ];
 

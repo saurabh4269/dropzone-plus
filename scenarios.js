@@ -1,11 +1,11 @@
-// REPLAY scenarios. Everything here is SIMULATED and labelled as such in the UI:
-// the yard is a drawn scene, actor positions are scripted, and the "detections" are derived
+// REPLAY scenarios, labelled as a replay in the UI:
+// the yard is a still camera image (assets/yard), actor positions are scripted, and the "detections" are derived
 // from those scripted positions (not from a vision model). Times are simulated seconds.
 // Coordinates: normalised frame, (x, y) = where the actor touches the ground.
 
-export const DEFAULT_ZONE = [[0.43, 0.58], [0.63, 0.58], [0.66, 0.80], [0.40, 0.80]];
+export const DEFAULT_ZONE = [[0.44, 0.44], [0.63, 0.44], [0.66, 0.64], [0.41, 0.64]];
 
-const POOL = { kind: 'pool', polygon: [[0.70, 0.50], [0.92, 0.50], [0.95, 0.66], [0.70, 0.66]] };
+const POOL = { kind: 'pool', polygon: [[0.713, 0.275], [0.995, 0.36], [0.995, 0.578], [0.762, 0.538]] };
 
 export const SCENARIOS = [
   {
@@ -16,13 +16,13 @@ export const SCENARIOS = [
     durationSec: 600,
     hazards: [],
     actors: [
-      { id: 'dog', label: 'dog', emoji: '🐕', size: 0.085, keys: [[0, 0.52, 0.70], [60, 0.55, 0.69], [120, 0.50, 0.71], [150, 0.36, 0.60], [200, 0.13, 0.44]], visible: [[0, 205]] },
-      { id: 'kid', label: 'person', emoji: '🧒', size: 0.16, keys: [[380, 1.02, 0.74], [415, 0.60, 0.73], [430, 0.52, 0.72], [450, 0.38, 0.86], [480, 0.10, 0.95]], visible: [[380, 480]] },
+      { id: 'dog', label: 'dog', emoji: '🐕', size: 0.12, keys: [[0, 0.53, 0.58], [60, 0.56, 0.57], [120, 0.51, 0.59], [150, 0.30, 0.66], [200, 0.115, 0.745]], visible: [[0, 205]] },
+      { id: 'kid', label: 'person', emoji: '🧒', size: 0.2, keys: [[380, 1.06, 0.66], [415, 0.60, 0.62], [430, 0.52, 0.60], [450, 0.38, 0.80], [480, 0.10, 0.98]], visible: [[380, 480]] },
     ],
     events: [
       { t: 35, type: 'answer', prompt: 'petdoor-in-only', yes: true, auto: true },
     ],
-    drop: { at: [0.53, 0.70] },
+    drop: { at: [0.535, 0.60] },
   },
   {
     id: 'unknown',
@@ -34,7 +34,7 @@ export const SCENARIOS = [
     media: { readable: false, reason: 'Video is end-to-end encrypted' },
     actors: [],
     events: [],
-    drop: { at: [0.52, 0.69], unseen: true },
+    drop: { at: [0.535, 0.60], unseen: true },
   },
   {
     id: 'pool',
@@ -43,10 +43,10 @@ export const SCENARIOS = [
     etaSec: 180,
     durationSec: 260,
     hazards: [POOL],
-    zone: [[0.50, 0.52], [0.68, 0.52], [0.70, 0.68], [0.48, 0.68]],
+    zone: [[0.53, 0.38], [0.68, 0.38], [0.70, 0.56], [0.51, 0.56]],
     actors: [],
     events: [],
-    drop: { at: [0.715, 0.60] },
+    drop: { at: [0.775, 0.50] },
   },
   {
     id: 'dusk',
@@ -63,7 +63,7 @@ export const SCENARIOS = [
       { t: 15, type: 'answer', prompt: 'lights-on', yes: true, auto: true },
       { t: 30, type: 'answer', prompt: 'sprinkler-pause', yes: true, auto: true },
     ],
-    drop: { at: [0.53, 0.70] },
+    drop: { at: [0.535, 0.60] },
   },
 ];
 

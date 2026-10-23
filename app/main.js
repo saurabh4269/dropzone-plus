@@ -5,7 +5,7 @@
 import { evaluateZone, freshen, auditZone, suggestZone, polygonCentroid, STATUS } from '../core/zone.js';
 import { createSession, PHASE } from '../core/engine.js';
 import { findNewObject } from '../core/changes.js';
-import { W, H, drawYard, drawActor, drawPolygon, drawDetections, drawDrone, drawPackage, drawUnreadable } from '../scene.js';
+import { W, H, yardReady, drawYard, drawActor, drawPolygon, drawDetections, drawDrone, drawPackage, drawUnreadable } from '../scene.js';
 import { loadDetector, detect } from '../detector.js';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -76,14 +76,14 @@ async function listCameras() {
   return r.json();
 }
 
-// Demo yard: a drawn scene (simulated), with actors placed relative to the user's own zone.
+// Demo yard: the replay camera image, with actors placed relative to the user's own zone.
 const demo = { t: 0, actors: [], dropAt: null };
 function demoActors(zone) {
-  const [cx, cy] = zone ? polygonCentroid(zone) : [0.53, 0.69];
+  const [cx, cy] = zone ? polygonCentroid(zone) : [0.535, 0.54];
   const fy = cy + 0.03;
   return [
-    { id: 'dog', label: 'dog', emoji: '🐕', size: 0.085, keys: [[0, cx, fy], [60, cx + 0.03, fy - 0.01], [120, cx - 0.02, fy + 0.01], [150, (cx + 0.13) / 2, (fy + 0.44) / 2], [200, 0.13, 0.44]], visible: [[0, 205]] },
-    { id: 'kid', label: 'person', emoji: '🧒', size: 0.16, keys: [[380, 1.02, fy + 0.04], [415, cx + 0.07, fy + 0.03], [430, cx, fy + 0.02], [450, cx - 0.15, Math.min(0.95, fy + 0.16)], [480, 0.10, 0.95]], visible: [[380, 480]] },
+    { id: 'dog', label: 'dog', emoji: '🐕', size: 0.12, keys: [[0, cx, fy], [60, cx + 0.03, fy - 0.01], [120, cx - 0.02, fy + 0.01], [150, (cx + 0.115) / 2, (fy + 0.745) / 2], [200, 0.115, 0.745]], visible: [[0, 205]] },
+    { id: 'kid', label: 'person', emoji: '🧒', size: 0.2, keys: [[380, 1.06, fy + 0.04], [415, cx + 0.07, fy + 0.03], [430, cx, fy + 0.02], [450, cx - 0.15, Math.min(0.95, fy + 0.16)], [480, 0.10, 0.95]], visible: [[380, 480]] },
   ];
 }
 function actorPos(a, t) {
@@ -111,6 +111,7 @@ function drawDemoYard(ctx, { withActors = true, packageAt = null } = {}) {
 async function grabFrame(cameraId = S().camera?.id) {
   if (isDemo()) {
     if (cameraId === 'demo-front') return { readable: false, reason: 'This camera is offline.', observedAt: Date.now(), source: 'demo' };
+    await yardReady;
     const c = Object.assign(document.createElement('canvas'), { width: W, height: H });
     drawDemoYard(c.getContext('2d'), { packageAt: delivery.droppedAt ? delivery.dropPoint : null });
     return { img: c, observedAt: Date.now(), readable: true, source: 'demo' };
@@ -456,7 +457,7 @@ routes.zones = ([sub, id], q) => {
 
 function zoneEditor(id, onboarding) {
   const existing = S().zones.find((z) => z.id === id);
-  const z = existing ? structuredClone(existing) : { id: uid(), name: '', desc: '', polygon: [[0.40, 0.58], [0.62, 0.58], [0.65, 0.80], [0.37, 0.80]], hazards: [], cameraId: S().camera?.id, isDefault: !S().zones.length };
+  const z = existing ? structuredClone(existing) : { id: uid(), name: '', desc: '', polygon: [[0.44, 0.44], [0.63, 0.44], [0.66, 0.64], [0.41, 0.64]], hazards: [], cameraId: S().camera?.id, isDefault: !S().zones.length };
   setChrome({ title: existing ? 'Edit drop zone' : onboarding ? 'Mark your drop spot' : 'New drop zone', back: onboarding ? '#/onboarding/permissions' : '#/zones' });
   if (onboarding) $('#appbar').hidden = false;
   view(`${onboarding ? progress('zone') : ''}
@@ -506,8 +507,9 @@ function zoneEditor(id, onboarding) {
   canvas.addEventListener('pointerup', () => { if (drag) { drag = null; renderAudit(); } });
   $('#hz').onclick = () => openSheet(`<h3>What’s near the drop spot?</h3><p class="mute small">Mark it once. DropZone warns you if it’s inside downwash range (about 15 ft for water, 10 ft for other hazards).</p>
     <div class="chips">${['pool', 'pond', 'patio edge', 'trampoline', 'overhang'].map((k) => `<button class="chip" data-k="${k}">${k}</button>`).join('')}</div>`, (el) => el.querySelectorAll('[data-k]').forEach((b) => (b.onclick = () => {
-    const [cx] = polygonCentroid(z.polygon); const x0 = cx > 0.5 ? 0.08 : 0.68;
-    z.hazards.push({ kind: b.dataset.k, polygon: [[x0, 0.5], [x0 + 0.22, 0.5], [x0 + 0.24, 0.66], [x0, 0.66]] });
+    const [cx] = polygonCentroid(z.polygon); const x0 = cx > 0.5 ? 0.2 : 0.68;
+    const poly = b.dataset.k === 'pool' ? [[0.713, 0.275], [0.995, 0.36], [0.995, 0.578], [0.762, 0.538]] : [[x0, 0.4], [x0 + 0.2, 0.4], [x0 + 0.22, 0.56], [x0, 0.56]];
+    z.hazards.push({ kind: b.dataset.k, polygon: poly });
     closeSheet(); renderAudit(); toast('Drag the blue corners onto the ' + b.dataset.k);
   })));
   const refresh = async () => { frame = null; redraw(); frame = await grabFrame(z.cameraId); redraw(); };
