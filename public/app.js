@@ -111,7 +111,7 @@ function observe({ detections, media = { readable: true }, observedAt, source, s
   if (app._photoPending) { app._photoPending = false; app.session.startDelivery({ etaAt: Date.now() + 8 * 60000, carrier: 'Simulated carrier' }); }
   $('srcLabel').textContent = `source: ${source}`;
   $('obsLabel').textContent = `observed: ${observedAt ? fmtTime(observedAt) : '—'} · expires ${v.stale_after ? fmtTime(Date.parse(v.stale_after)) : '—'}`;
-  $('detLabel').textContent = `detector: ${scripted ? 'scripted (replay, not a model)' : source === 'replay' ? '—' : 'COCO-SSD in browser'}`;
+  $('detLabel').textContent = `detector: ${scripted ? 'scripted (replay, not a model)' : !media.readable ? 'none (no readable frame)' : 'COCO-SSD in browser'}`;
   return v;
 }
 
@@ -262,15 +262,27 @@ function renderReceipt(r) {
 }
 
 // ---------- images: Ring snapshots, live frames, uploads ----------
-async function analyseImage(el, { label, observedAt, source }) {
-  $('detLabel').textContent = 'detector: loading COCO-SSD…';
-  await loadDetector();
+async function analyseImage(el, { label, observedAt, source, blob }) {
   const iw = el.naturalWidth || el.videoWidth, ih = el.naturalHeight || el.videoHeight;
   const rect = fitRect(iw, ih);
-  const preds = await detect(el);
-  const detections = preds.map((p) => ({ label: p.class, score: p.score, box: [(rect[0] + p.bbox[0] * rect[2] / iw) / W, (rect[1] + p.bbox[1] * rect[3] / ih) / H, (p.bbox[2] * rect[2] / iw) / W, (p.bbox[3] * rect[3] / ih) / H] }));
+  // image-normalised box -> canvas-normalised box (letterboxed)
+  const toCanvas = ([x, y, w, h]) => [(rect[0] + x * rect[2]) / W, (rect[1] + y * rect[3]) / H, (w * rect[2]) / W, (h * rect[3]) / H];
+  let detections, detector = 'COCO-SSD in browser';
+  if (app.bedrock && blob) {
+    $('detLabel').textContent = 'detector: Amazon Bedrock…';
+    const r = await fetch('./api/vision/bedrock', { method: 'POST', headers: { 'Content-Type': blob.type || 'image/jpeg' }, body: blob }).then((x) => x.json()).catch((e) => ({ ok: false, error: e.message }));
+    if (r.ok) { detections = r.detections.map((d) => ({ ...d, box: toCanvas(d.box) })); detector = `Amazon Bedrock ${r.model}`; }
+  }
+  if (!detections) {
+    $('detLabel').textContent = 'detector: loading COCO-SSD…';
+    await loadDetector();
+    const preds = await detect(el);
+    detections = preds.map((p) => ({ label: p.class, score: p.score, box: toCanvas([p.bbox[0] / iw, p.bbox[1] / ih, p.bbox[2] / iw, p.bbox[3] / ih]) }));
+  }
   if (el.tagName === 'IMG') { app.image = el; app.imageRect = rect; app.imageLabel = label; if (app.view !== 'video') app.view = 'image'; }
-  return observe({ detections, observedAt, source });
+  const v = observe({ detections, observedAt, source });
+  $('detLabel').textContent = `detector: ${detector}`;
+  return v;
 }
 
 async function ringSnapshot() {
@@ -284,9 +296,10 @@ async function ringSnapshot() {
       return observe({ detections: [], media: { readable: false, reason: `Ring snapshot unavailable (${j.status || res.status}): ${j.reason || ''}`.slice(0, 160) }, observedAt: t0, source: 'ring-snapshot' });
     }
     const observedAt = Date.parse(res.headers.get('X-Observed-At')) || t0;
-    const url = URL.createObjectURL(await res.blob());
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
     const img = await loadImg(url);
-    const v = await analyseImage(img, { label: 'Ring snapshot · Ring Partner API', observedAt, source: 'ring-snapshot' });
+    const v = await analyseImage(img, { label: 'Ring snapshot · Ring Partner API', observedAt, source: 'ring-snapshot', blob });
     return { v, url, observedAt };
   } catch (e) {
     return observe({ detections: [], media: { readable: false, reason: e.message }, observedAt: t0, source: 'ring-snapshot' });
@@ -488,6 +501,7 @@ async function boot() {
   wire();
   const cfg = await fetch('./api/config').then((r) => (r.ok ? r.json() : null)).catch(() => null);
   app.server = Boolean(cfg);
+  app.bedrock = Boolean(cfg?.vision?.bedrock?.enabled);
   const forceReplay = new URLSearchParams(location.search).has('replay');
   if (cfg?.mode === 'live' && !forceReplay) {
     app.mode = 'live';
