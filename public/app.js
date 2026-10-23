@@ -321,7 +321,12 @@ async function analyseImage(el, { label, observedAt, source, blob }) {
   // image-normalised box -> canvas-normalised box (letterboxed)
   const toCanvas = ([x, y, w, h]) => [(rect[0] + x * rect[2]) / W, (rect[1] + y * rect[3]) / H, (w * rect[2]) / W, (h * rect[3]) / H];
   let detections, detector = 'COCO-SSD in browser';
-  if (app.bedrock && blob) {
+  if (app.rekognition && blob) {
+    $('detLabel').textContent = 'detector: Amazon Rekognition…';
+    const r = await fetch('./api/vision/rekognition', { method: 'POST', headers: { 'Content-Type': blob.type || 'image/jpeg' }, body: blob }).then((x) => x.json()).catch((e) => ({ ok: false, error: e.message }));
+    if (r.ok) { detections = r.detections.map((d) => ({ ...d, box: toCanvas(d.box) })); detector = `Amazon Rekognition DetectLabels${r.hazards.length ? ' · scene: ' + r.hazards.map((h) => h.label).join(', ') : ''}`; }
+  }
+  if (!detections && app.bedrock && blob) {
     $('detLabel').textContent = 'detector: Amazon Bedrock…';
     const r = await fetch('./api/vision/bedrock', { method: 'POST', headers: { 'Content-Type': blob.type || 'image/jpeg' }, body: blob }).then((x) => x.json()).catch((e) => ({ ok: false, error: e.message }));
     if (r.ok) { detections = r.detections.map((d) => ({ ...d, box: toCanvas(d.box) })); detector = `Amazon Bedrock ${r.model}`; }
@@ -559,6 +564,7 @@ async function boot() {
   const cfg = await fetch('./api/config').then((r) => (r.ok ? r.json() : null)).catch(() => null);
   app.server = Boolean(cfg);
   app.bedrock = Boolean(cfg?.vision?.bedrock?.enabled);
+  app.rekognition = Boolean(cfg?.vision?.rekognition?.enabled);
   const forceReplay = new URLSearchParams(location.search).has('replay');
   if (cfg?.mode === 'live' && !forceReplay) {
     app.mode = 'live';

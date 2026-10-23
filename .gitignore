@@ -5,3 +5,4 @@ node_modules/
 .vercel/
 *.sqlite
 __pycache__/
+package-lock.json

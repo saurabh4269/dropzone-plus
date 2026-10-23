@@ -14,6 +14,7 @@ import { verify, firstDelivery } from './lib/webhook.js';
 import { buildAdvisory } from './public/core/advisory.js';
 import { bedrockAvailable, describeWithBedrock } from './lib/bedrock.js';
 import { oauthConfigured, authorizeUrl, handleCallback, maskEmail } from './lib/oauth.js';
+import { rekognitionAvailable, detectLabels } from './lib/rekognition.js';
 
 const ROOT = fileURLToPath(new URL('./public/', import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -70,7 +71,7 @@ const routes = {
     oauth: { available: oauthConfigured() },
     ring: { configured: ringConfigured(), api: RING_API, official: RING_API === 'https://api.amazonvision.com' },
     webhook: { endpoint: '/webhooks/ring', secretIsDefault: !process.env.RING_WEBHOOK_SECRET },
-    vision: { browser: 'coco-ssd (TensorFlow.js)', bedrock: await bedrockAvailable() },
+    vision: { browser: 'coco-ssd (TensorFlow.js)', rekognition: await rekognitionAvailable(), bedrock: await bedrockAvailable() },
   }),
 
   // Discovery: every call is attempted and reported separately, because Playground endpoints fail independently.
@@ -169,6 +170,12 @@ const routes = {
   },
 
   // Optional AWS path: Amazon Bedrock (Nova) describes a frame. Off unless AWS credentials + DZ_BEDROCK=1.
+  // AWS runtime path: Amazon Rekognition DetectLabels on a Ring frame (opt-in: DZ_AWS=1 + AWS credentials).
+  'POST /api/vision/rekognition': async (req) => {
+    const body = await readBody(req, 5_000_000); // Rekognition accepts up to 5 MB of image bytes
+    try { return await detectLabels(body); }
+    catch (e) { return { ok: false, error: `${e.name}: ${e.message}`.slice(0, 200) }; }
+  },
   'POST /api/vision/bedrock': async (req) => {
     const body = await readBody(req, 8_000_000);
     return describeWithBedrock(body, req.headers['content-type'] || 'image/jpeg');
