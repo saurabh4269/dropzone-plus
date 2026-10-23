@@ -4,14 +4,21 @@
   "description": "Ring camera checks your yard's drone drop zone before the drone arrives. Advisory, veto-only.",
   "type": "module",
   "license": "MIT",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node server.js",
     "test": "node --test test/*.test.js",
     "sim": "node scripts/simulate-events.js",
-    "ring:probe": "node scripts/ring-probe.js"
+    "ring:probe": "node scripts/ring-probe.js",
+    "e2e": "node scripts/e2e.mjs",
+    "test:all": "npm test && npm run e2e"
   },
   "optionalDependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.700.0"
+  },
+  "devDependencies": {
+    "ring-partner-sandbox": "github:saurabh4269/ring-partner-sandbox"
   }
 }
