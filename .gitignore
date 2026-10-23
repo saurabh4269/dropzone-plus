@@ -1,0 +1,7 @@
+context/
+.env
+.env.*
+node_modules/
+.vercel/
+*.sqlite
+__pycache__/
