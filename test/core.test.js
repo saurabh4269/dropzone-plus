@@ -111,3 +111,10 @@ test('zone audit flags a pool near the drop point', () => {
   const f = auditZone(zone, [pool]);
   assert.equal(f[0].code, 'HAZARD_NEAR_ZONE');
 });
+
+test('an object standing over most of the zone blocks it even if its feet are below', () => {
+  const big = { label: 'dog', score: 0.95, box: [0.3, 0.2, 0.4, 0.75] }; // feet at y=0.95, below zone
+  const v = evaluateZone({ detections: [big], zone, observedAt: T, now: T });
+  assert.equal(v.status, STATUS.NOT_CLEAR);
+  assert.equal(v.objects[0].where, 'over');
+});

@@ -6,11 +6,12 @@
 const NOUN = { pet: 'a pet', person: 'someone', vehicle: 'a vehicle', object: 'something' };
 
 function describe(verdict) {
-  const objs = (verdict.objects || []).filter((o) => o.where === 'in' || o.where === 'near');
+  const order = { in: 0, over: 1, near: 2 };
+  const objs = (verdict.objects || []).filter((o) => o.where in order).sort((a, b) => order[a.where] - order[b.where]);
   if (!objs.length) return null;
   const o = objs[0];
   const what = o.category === 'pet' && o.label ? `a ${o.label}` : NOUN[o.category] || 'something';
-  return { what, where: o.where === 'in' ? 'in the drop zone' : 'right next to the drop zone', category: o.category, label: o.label };
+  return { what, where: o.where === 'near' ? 'right next to the drop zone' : 'in the drop zone', category: o.category, label: o.label };
 }
 
 /**

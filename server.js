@@ -108,6 +108,7 @@ const routes = {
     latest = { verdict: body.verdict ?? latest.verdict, delivery: body.delivery ?? latest.delivery, holdsIssued: body.holdsIssued ?? latest.holdsIssued };
     return { ok: true };
   },
+  'GET /api/state': async () => latest,
   'GET /api/v1/advisory': async (req, res) => {
     const adv = buildAdvisory({ verdict: latest.verdict, delivery: latest.delivery, holdsIssued: latest.holdsIssued });
     send(res, 200, adv, { 'Access-Control-Allow-Origin': '*' });
