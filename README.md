@@ -217,7 +217,7 @@ Requirements: Node ≥ 20. There are no runtime dependencies (`@aws-sdk/client-b
 
 ```bash
 git clone https://github.com/saurabh4269/dropzone-plus && cd dropzone-plus
-npm test                 # 36 tests: zone logic, veto-only advisory, consent, every replay scenario, change detection,
+npm test                 # 46 tests (1 live AWS test skips without DZ_AWS=1): zone logic, veto-only advisory, consent, every replay scenario, change detection,
                          #   OAuth/PKCE, HMAC webhooks, and LIVE-mode integration against ring-partner-sandbox (if present)
 npm run e2e              # headless Chrome: landing, demo scenarios (needs local Chrome)
 npm run e2e:app          # headless Chrome at 390x844: full PWA journey, onboarding to proof of drop

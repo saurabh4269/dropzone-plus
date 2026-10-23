@@ -13,7 +13,7 @@ Deadline: **Sat 24 Oct 2026, 00:30 IST (Fri 12:00 PT)**. After you submit, pin t
 - **Proof of drop by before/after change detection** (`public/core/changes.js`), used in the demo, the PWA and live mode.
 - **Zone audit suggests a safer zone** (`suggestZone`); one click applies it.
 - **Detector vendored.** TF.js and the COCO-SSD model weights are in `public/vendor/` (Apache-2.0, ~19 MB), so there's no CDN dependency at runtime. The CDN is only a fallback.
-- **Tests:** `npm test` has 36 (zone logic, advisory, every replay scenario, change detection, OAuth/PKCE, HMAC, LIVE-mode integration against ring-partner-sandbox). `npm run e2e` checks the website and demo, and `npm run e2e:app` walks the full PWA journey at 390×844. All pass locally and against Pages.
+- **Tests:** `npm test` has 46 (zone logic, advisory, every replay scenario, change detection, OAuth/PKCE, HMAC, Rekognition mapping and a live AWS test, the 3D sim model, LIVE-mode integration against ring-partner-sandbox). `npm run e2e` checks the website and demo, and `npm run e2e:app` walks the full PWA journey at 390×844. All pass locally and against Pages.
 - **README:** hero image, labelled AI concept GIF, link table, an exact map of where the Ring API is called (file, function, trigger), a mermaid architecture diagram, real vs simulated, the PWA journey, and references (Ring docs, UX guide, ring-api-helloworld).
 - **FRICTION.md:** 14 entries, every one with task, steps, expected, actual, severity, workaround and suggestion. New ones: the OAuth scope mismatch in the docs (`ava` vs `ava.v1:read`), two response shapes for app-integrations, and CORS plus no sandbox OAuth client.
 - **CI** is ready in `ci/ci.yml`, but **you must enable it** (see below).
@@ -114,7 +114,7 @@ The camera footer should read "detector: Amazon Bedrock …". A project can win 
 - **How we built it:**
   - Ring account linking implemented per the docs (Partner-Initiated OAuth 2.0 with PKCE). Say plainly that it's untested against Ring because entrants get no partner credentials, and that a Playground token works.
   - Detector vendored (no CDN).
-  - 36 unit and integration tests plus two headless-Chrome end-to-end suites.
+  - 46 unit and integration tests plus two headless-Chrome end-to-end suites.
   - Ring UX design guide followed: device names, offline state, empty states, a skippable tutorial, in-app data deletion.
 - **Built with (add):** Progressive Web App (Web App Manifest, Service Worker), OAuth 2.0 PKCE, WebRTC/WHEP, TensorFlow.js (vendored), Canvas change detection, three.js (3D simulation).
 - **Testing instructions:** "Open https://saurabh4269.github.io/dropzone-plus/app/ on a phone or narrow window, then choose Try a demo home (simulated) → Backyard Cam → Continue → drag the zone → Save → Link a delivery partner → SkyHop Air (example) → Link → Home → Simulate a drone delivery → tap Yes. For scripted scenarios use /demo.html."
