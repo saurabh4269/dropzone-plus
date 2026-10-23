@@ -41,7 +41,7 @@ Then check that the Actions tab is green in both repos. These commits come after
    Paste the output to me, or into FRICTION.md if anything fails. The two things it confirms:
    - whether the Playground serves `image/download` snapshots
    - whether the device is `online`
-3. Run `npm start` and open http://localhost:8787. The badge should read **LIVE · Ring Playground**.
+3. Run `npm start` and open http://localhost:8787/demo.html. The badge should read **LIVE · Ring Partner API**.
    1. Click **Discover Ring device**. The "Ring API calls" panel lists each call and its status code.
    2. Click **Check zone now**. You should see a Ring snapshot with the zone overlaid.
    3. Click **Live view (WHEP)**, then **Analyse live frame**. In the Playground, press **Package / Motion** to make the simulated camera show something.
