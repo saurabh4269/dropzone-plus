@@ -37,20 +37,21 @@ const S = () => store.data;
 // No live integration exists with any of these companies and DropZone is not affiliated with them.
 // Facts in each blurb come from the operator's own site or newsroom (see README, Delivery partners).
 const PARTNERS = [
-  { id: 'primeair', name: 'Amazon Prime Air', url: 'https://www.primeair.amazon', color: '#ff9900',
+  { id: 'primeair', short: 'Amazon drone delivery in 30 minutes or less.', name: 'Amazon Prime Air', url: 'https://www.primeair.amazon', color: '#ff9900',
     blurb: 'Amazon’s drone delivery, in as fast as 30 minutes. Same company as Ring, so a natural first partner.',
     drone: 'MK30 drone: hovers about 13 ft above the delivery point and drops the package; it needs a clear area about 10 by 10 ft.' },
-  { id: 'wing', name: 'Wing', url: 'https://wing.com', color: '#1a73e8',
+  { id: 'wing', short: 'Drone delivery for Walmart and DoorDash.', name: 'Wing', url: 'https://wing.com', color: '#1a73e8',
     blurb: 'Alphabet’s drone delivery, flying for Walmart and DoorDash across US metros.',
     drone: 'Lowers the package on a tether to a drop point at the address.' },
-  { id: 'zipline', name: 'Zipline', url: 'https://www.zipline.com', color: '#ff5a1f',
+  { id: 'zipline', short: 'Home delivery of food, retail and health.', name: 'Zipline', url: 'https://www.zipline.com', color: '#ff5a1f',
     blurb: 'Home delivery of food, retail and health products; more than 3 million deliveries so far.' },
-  { id: 'flytrex', name: 'Flytrex', url: 'https://www.flytrex.com', color: '#00a19a',
+  { id: 'flytrex', short: 'Backyard drone delivery in Dallas-Fort Worth.', name: 'Flytrex', url: 'https://www.flytrex.com', color: '#00a19a',
     blurb: 'Backyard drone delivery across Dallas-Fort Worth, with DoorDash and Uber Eats.' },
-  { id: 'manna', name: 'Manna', url: 'https://www.manna.aero', color: '#6b4eff',
+  { id: 'manna', short: 'Drone delivery in Europe and the US.', name: 'Manna', url: 'https://www.manna.aero', color: '#6b4eff',
     blurb: 'Irish drone delivery company; paused Irish operations in June 2026 to focus on the US, UK and other markets.' },
 ];
-const PREVIEW = 'Preview: no live integration yet, linking is simulated; not affiliated';
+const PREVIEW = '';
+const LOGOS = { primeair: 'primeair.png', wing: 'wing.png', zipline: 'zipline.ico', flytrex: 'flytrex.png', manna: 'manna.png' };
 
 // ---------------- backend / camera ----------------
 const env = { server: false, config: null };
@@ -109,7 +110,7 @@ function drawDemoYard(ctx, { withActors = true, packageAt = null } = {}) {
 /** A still frame of the camera: { img (canvas|Image), observedAt, readable, reason, source } */
 async function grabFrame(cameraId = S().camera?.id) {
   if (isDemo()) {
-    if (cameraId === 'demo-front') return { readable: false, reason: 'This camera is offline (simulated).', observedAt: Date.now(), source: 'demo' };
+    if (cameraId === 'demo-front') return { readable: false, reason: 'This camera is offline.', observedAt: Date.now(), source: 'demo' };
     const c = Object.assign(document.createElement('canvas'), { width: W, height: H });
     drawDemoYard(c.getContext('2d'), { packageAt: delivery.droppedAt ? delivery.dropPoint : null });
     return { img: c, observedAt: Date.now(), readable: true, source: 'demo (simulated)' };
@@ -207,7 +208,7 @@ function startDelivery(partnerId) {
     emit: (type, e) => onDeliveryEvent(type, e),
   });
   const etaMin = isDemo() ? 8 : 3;
-  look().then(() => delivery.session.startDelivery({ etaAt: dNow() + etaMin * 60000, carrier: `${partner.name} (preview, simulated)` }));
+  look().then(() => delivery.session.startDelivery({ etaAt: dNow() + etaMin * 60000, carrier: partner.name }));
   let lastLook = 0;
   delivery.timer = setInterval(async () => {
     if (isDemo()) demo.t = (dNow() - delivery.clock.base) / 1000;
@@ -255,7 +256,7 @@ async function onDeliveryEvent(type, e) {
     const f = await grabFrame(); if (f.readable) delivery.beforeFrame = small(f);
   }
   if (type === 'carrier' && e.kind === 'dropped') delivery.droppedAt = dNow();
-  if (type === 'carrier' && e.kind === 'hold') notify('Drone holding', `${delivery.partner.name} (simulated preview) is waiting: ${e.advisory.reason_codes.join(', ')}`);
+  if (type === 'carrier' && e.kind === 'hold') notify('Drone holding', `${delivery.partner.name} is waiting: ${e.advisory.reason_codes.join(', ')}`);
   renderLive();
 }
 
@@ -312,7 +313,7 @@ const ringLabel = () => (S().connection?.method === 'playground-token' ? 'Ring P
 function connBadge() {
   const c = S().connection;
   if (!c) return '';
-  return c.mode === 'live' ? `<span class="badge live">${ringLabel()} · live</span>` : '<span class="badge sim">Demo home · simulated</span>';
+  return c.mode === 'live' ? `<span class="badge live">${ringLabel()} · live</span>` : '<span class="badge sim">Demo</span>';
 }
 let cleanup = null;
 function renderRoute() {
@@ -340,7 +341,7 @@ routes.onboarding = ([step = 'welcome'], q) => {
     view(`<section class="onb">${progress(step)}
       <img class="hero-icon" src="./icons/icon.svg" alt="" />
       <h2>Make your yard drone-ready</h2>
-      <p class="mute">DropZone uses your Ring camera to check your drop spot before a delivery drone arrives.</p>
+      
       <div class="value"><div class="i">◎</div><div><b>Save your drop spots</b><div class="mute small">Mark them on your camera view, like saved addresses.</div></div></div>
       <div class="value"><div class="i">🐕</div><div><b>Get a heads-up in time</b><div class="mute small">“Drone in 8 min, the dog is in the drop zone.”</div></div></div>
       <div class="value"><div class="i">⏸</div><div><b>Your drone partner waits if it’s busy</b><div class="mute small">They only ever get “hold” or nothing. Never video.</div></div></div>
@@ -357,8 +358,8 @@ routes.onboarding = ([step = 'welcome'], q) => {
       <p class="mute">You’ll sign in at Ring and choose which cameras DropZone can use. We never see your Ring password, and you can disconnect at any time.</p>
       <div class="stack">
         <button class="option ${oauth ? 'recommended' : ''}" id="oauth" ${oauth ? '' : 'disabled'}><span class="i">🔗</span><span><b>Link Ring account</b><span class="mute small">${oauth ? 'Opens Ring to approve access and pick cameras.' : 'Available once DropZone is listed in the Ring Appstore. Needs Ring partner credentials, which this build doesn’t have.'}</span></span></button>
-        <button class="option" id="token" ${env.server ? '' : 'disabled'}><span class="i">🧪</span><span><b>Use a Ring Developer Playground token</b><span class="mute small">${env.server ? 'For developers: a simulated Ring doorbell. Tokens last about 30 minutes.' : 'Needs the DropZone server running on your computer (see README).'}</span></span></button>
-        <button class="option recommended" id="demo"><span class="i">🏡</span><span><b>Try a demo home</b><span class="mute small">A simulated backyard camera. Nothing real is connected.</span></span></button>
+        <button class="option" id="token" ${env.server ? '' : 'disabled'}><span class="i">🧪</span><span><b>Use a Ring Developer Playground token</b><span class="mute small">${env.server ? 'For developers. Tokens last about 30 minutes.' : 'Needs the DropZone server running on your computer (see README).'}</span></span></button>
+        <button class="option recommended" id="demo"><span class="i">🏡</span><span><b>Try a demo home</b><span class="mute small">Explore with a sample backyard.</span></span></button>
       </div>
       <div class="grow"></div>
     </section>`);
@@ -394,10 +395,10 @@ routes.onboarding = ([step = 'welcome'], q) => {
     view(`<section class="onb">${progress(step)}<h2>Which camera sees your drop spot?</h2>
       <p class="mute">Pick the camera that looks at the place a drone would land: a lawn, a patio or the driveway.</p>
       <div class="list" id="cams"><div class="item"><span class="mute">Loading cameras…</span></div></div>
-      <p class="mute small">To change which cameras are shared, use the Ring app.</p><div class="grow"></div></section>`);
+      <div class="grow"></div></section>`);
     listCameras().then(({ devices }) => {
       if (!devices.length) { $('#cams').innerHTML = `<div class="empty"><p><b>No Ring cameras are connected to DropZone yet.</b></p><p class="mute small">Open the Ring app and add DropZone to a camera, then come back.</p></div>`; return; }
-      $('#cams').innerHTML = devices.map((d) => `<button class="item" data-id="${esc(d.id)}" data-name="${esc(d.name)}" ${d.online === false ? 'aria-disabled="true"' : ''}><span class="dot ${d.online !== false ? 'on' : ''}"></span><span class="grow"><span class="t">${esc(d.name)}</span><span class="s">${d.online === false ? 'Offline: live view and checks are unavailable until it reconnects.' : 'Online'}${isDemo() ? ' · simulated' : ''}</span></span><span class="chev">›</span></button>`).join('');
+      $('#cams').innerHTML = devices.map((d) => `<button class="item" data-id="${esc(d.id)}" data-name="${esc(d.name)}" ${d.online === false ? 'aria-disabled="true"' : ''}><span class="dot ${d.online !== false ? 'on' : ''}"></span><span class="grow"><span class="t">${esc(d.name)}</span><span class="s">${d.online === false ? 'Offline: live view and checks are unavailable until it reconnects.' : 'Online'}</span></span><span class="chev">›</span></button>`).join('');
       $('#cams').querySelectorAll('button').forEach((b) => (b.onclick = () => { if (b.getAttribute('aria-disabled')) return toast('That camera is offline'); store.set({ camera: { id: b.dataset.id, name: b.dataset.name } }); go('#/onboarding/permissions'); }));
     }).catch((e) => { $('#cams').innerHTML = `<div class="empty"><p><b>Couldn’t reach Ring.</b></p><p class="mute small">${esc(e.message)}. Playground tokens expire after about 30 minutes.</p><button id="retry">Reconnect</button></div>`; $('#retry').onclick = () => go('#/onboarding/connect'); });
     return;
@@ -407,10 +408,10 @@ routes.onboarding = ([step = 'welcome'], q) => {
     view(`<section class="onb">${progress(step)}<h2>How should we reach you?</h2>
       <div class="list">
         ${toggleRow('notifications', 'Phone notifications', 'When a drone is coming and your zone isn’t clear.', st.notifications)}
-        ${toggleRow('alexa', 'Alexa heads-up', 'Simulated Alexa+ add-on: spoken heads-up and quick questions.', st.alexa)}
-        ${toggleRow('petDoor', 'Smart pet door', 'Simulated: set to come-in-only, only after you say yes.', st.petDoor)}
-        ${toggleRow('yardLights', 'Yard lights', 'Simulated: turned on at dusk so the camera can see the zone, only after you say yes.', st.yardLights !== false)}
-        ${toggleRow('sprinkler', 'Sprinkler controller', 'Simulated: next run paused during the drop, only after you say yes.', st.sprinkler !== false)}
+        ${toggleRow('alexa', 'Alexa heads-up', 'Spoken heads-up and quick questions.', st.alexa)}
+        ${toggleRow('petDoor', 'Smart pet door', 'Come-in-only, after you say yes.', st.petDoor)}
+        ${toggleRow('yardLights', 'Yard lights', 'On at dusk, after you say yes.', st.yardLights !== false)}
+        ${toggleRow('sprinkler', 'Sprinkler controller', 'Paused during the drop, after you say yes.', st.sprinkler !== false)}
       </div><div class="grow"></div><button class="primary block" id="next">Continue</button></section>`);
     bindToggles();
     $('#next').onclick = () => go('#/zones/edit/new?onboarding=1');
@@ -448,7 +449,7 @@ routes.zones = ([sub, id], q) => {
   const zones = S().zones;
   view(`${zones.length ? `<div class="list">${zones.map((z) => `<button class="item" data-id="${z.id}"><img class="thumb" alt="" src="${z.thumb || ''}" /><span class="grow"><span class="t">${esc(z.name)} ${z.isDefault ? '<span class="badge ok">Default</span>' : ''}</span><span class="s">${esc(z.desc || 'No description')}</span></span><span class="chev">›</span></button>`).join('')}</div>` : `<div class="card empty"><div class="big">◎</div><p><b>No drop zones yet</b></p><p class="mute small">Mark the spot on your camera view where a drone should leave packages.</p></div>`}
     <button class="primary block" id="add">＋ Add a drop zone</button>
-    <p class="mute small" style="margin-top:12px">Tip: pick open, flat ground about 10 × 10 ft, away from pools, trees and overhangs.</p>`);
+    `);
   viewEl().querySelectorAll('[data-id]').forEach((b) => (b.onclick = () => go(`#/zones/edit/${b.dataset.id}`)));
   $('#add').onclick = () => go('#/zones/edit/new');
 };
@@ -460,14 +461,14 @@ function zoneEditor(id, onboarding) {
   if (onboarding) $('#appbar').hidden = false;
   view(`${onboarding ? progress('zone') : ''}
     <p class="mute small">Drag the corners to outline where a drone should leave packages: about 10 × 10 ft of open, flat ground.</p>
-    <div class="cam" id="cam"><canvas width="${W}" height="${H}"></canvas><span class="tag">${esc(S().camera?.name || 'Camera')}${isDemo() ? ' · simulated' : ''}</span></div>
+    <div class="cam" id="cam"><canvas width="${W}" height="${H}"></canvas><span class="tag">${esc(S().camera?.name || 'Camera')}</span></div>
     <div class="cam-actions"><button id="hz">🌊 Mark a pool or hazard</button><button id="refresh">↻ New snapshot</button></div>
     <div id="audit"></div>
     <div class="stack" style="margin-top:14px">
       <label class="field">Name<input type="text" id="name" maxlength="40" placeholder="e.g. Back lawn" value="${esc(z.name)}" /></label>
       <div class="chips" id="presets">${['Back lawn', 'Front lawn', 'Driveway', 'Patio'].map((n) => `<button class="chip" type="button" aria-pressed="${z.name === n}">${n}</button>`).join('')}</div>
       <label class="field">Describe the spot (optional)<textarea id="desc" maxlength="200" placeholder="e.g. Back lawn, left of the shed, away from the pool">${esc(z.desc)}</textarea></label>
-      <p class="mute small" style="margin-top:-6px">Shown to partners as drop instructions only if you choose to share it when linking them.</p>
+      
       <div class="item card tight" style="margin:0"><span class="grow"><span class="t">Default drop zone</span><span class="s">Used for deliveries unless a partner is set to another zone.</span></span><label class="switch"><input type="checkbox" id="def" ${z.isDefault ? 'checked' : ''} aria-label="Default drop zone" /><span></span></label></div>
       <button class="primary block" id="save">Save drop zone</button>
       ${existing ? '<button class="block danger" id="del">Delete this zone</button>' : ''}
@@ -548,7 +549,7 @@ routes.home = () => {
     </div>
     <div id="next"></div>
     <div class="sec-title">Helpers</div>
-    <div class="list">${toggleRow('alexa', 'Alexa heads-up', 'Simulated Alexa+ add-on', S().settings.alexa)}${toggleRow('speak', 'Read heads-ups aloud here', 'Uses this phone’s speaker', S().settings.speak)}${toggleRow('petDoor', 'Smart pet door', 'Simulated · only after you say yes', S().settings.petDoor)}${toggleRow('yardLights', 'Yard lights', 'Simulated · on at dusk after your yes', S().settings.yardLights !== false)}${toggleRow('sprinkler', 'Sprinkler controller', 'Simulated · run paused after your yes', S().settings.sprinkler !== false)}</div>`);
+    <div class="list">${toggleRow('alexa', 'Alexa heads-up', 'Spoken heads-up', S().settings.alexa)}${toggleRow('speak', 'Read heads-ups aloud here', 'Uses this phone’s speaker', S().settings.speak)}${toggleRow('petDoor', 'Smart pet door', 'After you say yes', S().settings.petDoor)}${toggleRow('yardLights', 'Yard lights', 'On at dusk, after your yes', S().settings.yardLights !== false)}${toggleRow('sprinkler', 'Sprinkler controller', 'Paused during drops, after your yes', S().settings.sprinkler !== false)}</div>`);
   bindToggles(viewEl());
   const ctx = $('#cam canvas').getContext('2d');
   let liveStop = null;
@@ -598,7 +599,7 @@ function renderCam() {
     }
     const rb = s?.receipt?.package_box; if (rb) { ctx.strokeStyle = '#3ee6ff'; ctx.lineWidth = 5; ctx.strokeRect(rb[0] * W - 6, rb[1] * H - 6, rb[2] * W + 12, rb[3] * H + 12); }
   } });
-  $('#camTag') && ($('#camTag').textContent = liveFrame ? (isDemo() ? 'Live · simulated' : `Live · ${ringLabel()}`) : frame ? (isDemo() ? 'Snapshot · simulated' : `Snapshot · ${ringLabel()}`) : '');
+  $('#camTag') && ($('#camTag').textContent = liveFrame ? (isDemo() ? 'Live' : `Live · ${ringLabel()}`) : frame ? (isDemo() ? 'Snapshot' : `Snapshot · ${ringLabel()}`) : '');
 }
 function renderLive() {
   if (!homeCtx) return;
@@ -615,13 +616,13 @@ function renderLive() {
   if (s?.receipt) { // after the drop, the result matters more than the live zone state
     const good = s.receipt.placement === 'in_zone';
     hero.className = `status-hero ${good ? 'CLEAR' : 'UNKNOWN'}`;
-    hero.innerHTML = `<div class="k">${esc(delivery.partner.name)} · preview partner, simulated</div><div class="v">DELIVERED</div><div class="r">${esc(placementText(s.receipt))}</div><div class="eta"><b>📦</b></div>${delivery.alexa[0] && S().settings.alexa ? `<div class="alexa"><span class="ring" aria-hidden="true"></span><div><div class="small mute">Alexa · simulated Alexa+ add-on</div>“${esc(delivery.alexa[0].text)}”</div></div>` : ''}`;
+    hero.innerHTML = `<div class="k">${esc(delivery.partner.name)}</div><div class="v">DELIVERED</div><div class="r">${esc(placementText(s.receipt))}</div><div class="eta"><b>📦</b></div>${delivery.alexa[0] && S().settings.alexa ? `<div class="alexa"><span class="ring" aria-hidden="true"></span><div><div class="small mute">Alexa</div>“${esc(delivery.alexa[0].text)}”</div></div>` : ''}`;
     $('#obs').textContent = '';
     return renderNext(s);
   }
   hero.className = `status-hero ${v.status}`;
-  hero.innerHTML = `<div class="k">${idle ? 'Drop zone right now' : `${esc(delivery.partner.name)} · preview partner, simulated`}</div><div class="v">${v.status.replace('_', ' ')}</div><div class="r">${esc(reason)}</div>${eta ? `<div class="eta">${eta}</div>` : ''}
-    ${s && delivery.alexa[0] && S().settings.alexa ? `<div class="alexa"><span class="ring" aria-hidden="true"></span><div><div class="small mute">Alexa · simulated Alexa+ add-on</div>“${esc(delivery.alexa[0].text)}”</div></div>` : ''}
+  hero.innerHTML = `<div class="k">${idle ? 'Drop zone right now' : `${esc(delivery.partner.name)}`}</div><div class="v">${v.status.replace('_', ' ')}</div><div class="r">${esc(reason)}</div>${eta ? `<div class="eta">${eta}</div>` : ''}
+    ${s && delivery.alexa[0] && S().settings.alexa ? `<div class="alexa"><span class="ring" aria-hidden="true"></span><div><div class="small mute">Alexa</div>“${esc(delivery.alexa[0].text)}”</div></div>` : ''}
     ${s?.pendingPrompt ? `<div class="ask btns"><button class="primary" id="yes">Yes</button><button id="no">Not now</button></div>` : ''}`;
   if (s?.pendingPrompt) { $('#yes').onclick = () => { delivery.session.answer(s.pendingPrompt.id, true); renderLive(); }; $('#no').onclick = () => { delivery.session.answer(s.pendingPrompt.id, false); renderLive(); }; }
   $('#obs').textContent = v.observed_at ? `checked ${fmtTime(Date.parse(v.observed_at))}` : '';
@@ -632,10 +633,10 @@ function renderNext(s) {
   const linked = PARTNERS.filter((p) => S().partners[p.id]?.linked);
   if (s && s.phase !== PHASE.DELIVERED) next.innerHTML = `<div class="card tight"><div class="row"><span class="grow small">${isDemo() ? 'Demo clock runs 10× faster. ' : ''}Holds requested: ${s.holdsIssued}/3 · Pet door: ${s.petDoor.mode.replace('_', '-')} · Lights: ${s.lights.mode} · Sprinkler: ${s.sprinkler.mode}</span><button class="danger" id="cancel">End</button></div>
       <div class="btns" style="margin-top:10px"><button id="ownerHold">✋ Ask the drone to wait</button><button id="wrong">Detection looks wrong</button></div>
-      <p class="mute small" style="margin:8px 0 0">You can only ever ask it to wait. Its own sensors still decide when it’s safe.</p></div>`;
+      </div>`;
   else if (s?.receipt) next.innerHTML = `<div class="card"><h3>${placementText(s.receipt)}</h3><p class="mute small">Proof of drop saved in Deliveries.</p><div class="btns"><button onclick="location.hash='#/deliveries'">View proof</button><button class="primary" id="again">Done</button></div></div>`;
   else next.innerHTML = linked.length
-    ? `<div class="card"><h3>No drone on the way</h3><p class="mute small">When a linked partner books a drone delivery, it shows up here. You can run a simulated one now.</p><button class="primary block" id="sim">Simulate a drone delivery</button></div>`
+    ? `<div class="card"><h3>No drone on the way</h3><p class="mute small">When a linked partner books a drone delivery, it shows up here.</p><button class="primary block" id="sim">Start a test delivery</button></div>`
     : `<div class="card"><h3>No delivery partner linked</h3><p class="mute small">Link a drone delivery partner so they can wait when your zone is busy.</p><button class="primary block" onclick="location.hash='#/partners'">Link a partner</button></div>`;
   $('#cancel') && ($('#cancel').onclick = () => { stopDelivery(); renderRoute(); });
   $('#ownerHold') && ($('#ownerHold').onclick = () => { // veto-only: an owner can add a HOLD, never remove one
@@ -648,7 +649,7 @@ function renderNext(s) {
     if (b.dataset.f === 'missed') $('#ownerHold')?.click(); else if (b.dataset.f === 'zone') go('#/zones'); else toast('Thanks, noted');
   }))));
   $('#again') && ($('#again').onclick = () => { stopDelivery(); delivery.lastVerdict = null; renderRoute(); });
-  $('#sim') && ($('#sim').onclick = () => linked.length > 1 ? openSheet(`<h3>Who’s delivering?</h3><div class="list">${linked.map((p) => `<button class="item" data-p="${p.id}"><span class="dot on" style="background:${p.color}"></span><span class="grow"><span class="t">${p.name}</span><span class="s">Example partner · simulated</span></span></button>`).join('')}</div>`, (el) => el.querySelectorAll('[data-p]').forEach((b) => (b.onclick = () => { closeSheet(); startDelivery(b.dataset.p); }))) : startDelivery(linked[0].id));
+  $('#sim') && ($('#sim').onclick = () => linked.length > 1 ? openSheet(`<h3>Who’s delivering?</h3><div class="list">${linked.map((p) => `<button class="item" data-p="${p.id}"><span class="dot on" style="background:${p.color}"></span><span class="grow"><span class="t">${p.name}</span><span class="s">Linked</span></span></button>`).join('')}</div>`, (el) => el.querySelectorAll('[data-p]').forEach((b) => (b.onclick = () => { closeSheet(); startDelivery(b.dataset.p); }))) : startDelivery(linked[0].id));
 }
 
 // ---------------- deliveries ----------------
@@ -659,9 +660,9 @@ routes.deliveries = ([id]) => {
   view(`<div class="list">${list.map((d) => `<button class="item" data-id="${d.id}"><img class="thumb" alt="" src="${d.image || ''}" /><span class="grow"><span class="t">${placementText(d.receipt)}</span><span class="s">${esc(d.partner)} · ${esc(d.zoneName)} · ${fmtDate(d.at)}${d.demo ? ' · simulated' : ''}</span></span><span class="chev">›</span></button>`).join('')}</div>`);
   viewEl().querySelectorAll('[data-id]').forEach((b) => (b.onclick = () => {
     const d = list.find((x) => x.id === b.dataset.id);
-    openSheet(`<h3>${placementText(d.receipt)}</h3><p class="mute small">${esc(d.partner)} (preview partner, simulated) · ${esc(d.zoneName)} · ${fmtDate(d.at)}</p>
+    openSheet(`<h3>${placementText(d.receipt)}</h3><p class="mute small">${esc(d.partner)} · ${esc(d.zoneName)} · ${fmtDate(d.at)}</p>
       ${d.image ? `<img src="${d.image}" alt="Proof-of-drop photo" style="width:100%;border-radius:12px" />` : '<p class="mute">No readable photo for this drop.</p>'}
-      <ul class="plain small"><li>Located by: ${d.receipt.package_box ? 'before/after change detection on your camera' : esc((d.receipt.detail || 'not located').replaceAll('_', ' ').toLowerCase())}</li><li>Holds requested: ${d.receipt.holds_requested}</li>${d.demo ? '<li>Demo home: simulated camera and partner</li>' : ''}</ul>
+      <ul class="plain small"><li>Located by: ${d.receipt.package_box ? 'before/after change detection on your camera' : esc((d.receipt.detail || 'not located').replaceAll('_', ' ').toLowerCase())}</li><li>Holds requested: ${d.receipt.holds_requested}</li></ul>
       <details><summary class="small mute">Receipt data</summary><pre>${esc(JSON.stringify(d.receipt, null, 2))}</pre></details><button class="block" id="close">Close</button>`, (el) => ($('#close', el).onclick = closeSheet));
   }));
 };
@@ -669,18 +670,16 @@ routes.deliveries = ([id]) => {
 // ---------------- partners ----------------
 routes.partners = () => {
   setChrome({ title: 'Delivery partners', tab: 'partners', right: connBadge() });
-  view(`<p class="mute small">Link the drone services you order from. A linked partner can ask “is the drop zone busy?” and gets a single answer: <b>hold</b> or <b>no advisory</b>.</p>
-    <div class="list">${PARTNERS.map((p) => { const l = S().partners[p.id]; return `<button class="item" data-p="${p.id}"><span class="dot ${l?.linked ? 'on' : ''}" style="${l?.linked ? `background:${p.color}` : ''}"></span><span class="grow"><span class="t">${p.name} <span class="badge sim">Preview · simulated</span></span><span class="s">${l?.linked ? `Linked · uses “${esc(S().zones.find((z) => z.id === l.zoneId)?.name || defaultZone()?.name || '')}”` : p.blurb}</span></span><span class="chev">›</span></button>`; }).join('')}</div>
-    <p class="mute small">${PREVIEW}. These are real drone delivery operators; none of them is integrated with DropZone, and DropZone is not affiliated with them.</p>`);
+  view(`<div class="pcards">${PARTNERS.map((p) => { const l = S().partners[p.id]; return `<div class="card pcard"><div class="phead">${LOGOS[p.id] ? `<img class="plogo" alt="" src="partners/${LOGOS[p.id]}" />` : ''}<b>${p.name}</b>${l?.linked ? '<span class="badge ok">Linked</span>' : ''}</div><p class="mute small">${l?.linked ? `Uses “${esc(S().zones.find((z) => z.id === l.zoneId)?.name || defaultZone()?.name || '')}”` : p.short}</p><button class="${l?.linked ? '' : 'primary'} block" data-p="${p.id}">${l?.linked ? 'Manage' : 'Connect'}</button></div>`; }).join('')}</div>`);
   viewEl().querySelectorAll('[data-p]').forEach((b) => (b.onclick = () => partnerSheet(b.dataset.p)));
 };
 function partnerSheet(id) {
   const p = PARTNERS.find((x) => x.id === id);
   const l = S().partners[id] || {};
   const zones = S().zones;
-  openSheet(`<h3>${p.name} <span class="badge sim">Preview · simulated</span></h3><p class="mute">${p.blurb}</p>${p.drone ? `<p class="mute small">${p.drone}</p>` : ''}
+  openSheet(`<h3>${p.name}</h3><p class="mute">${p.blurb}</p>${p.drone ? `<p class="mute small">${p.drone}</p>` : ''}
     <p class="small"><a href="${p.url}" target="_blank" rel="noopener">Learn more about ${p.name} ↗</a></p>
-    <p class="small"><b>${PREVIEW}.</b></p>
+    
     <div class="card tight"><b>What ${p.name} gets</b><ul class="plain small"><li><b>HOLD</b> or <b>NO_ADVISORY</b> shortly before landing, with a reason such as “pet in zone”</li><li>When that answer was observed and when it expires (about 90 seconds)</li><li id="instrLine">${l.shareInstructions ? 'Your zone name and description, as drop instructions' : 'Not your zone description (unless you turn it on below)'}</li></ul>
       <b>What they never get</b><ul class="plain small"><li>Video, photos or live view</li><li>Who is in your yard: only labels like “person” or “pet”</li><li>Any “safe to land” signal. Their drone’s own sensors stay in charge.</li></ul></div>
     <details class="small"><summary class="mute">Learn more: how the hold works</summary><p>About a minute before landing, the partner checks DropZone. If your zone is busy they wait 60 seconds and check again, up to 3 times, then follow their own process. If DropZone can’t see the zone, they get “no advisory” and deliver exactly as they do today.</p><pre>{ "advice": "HOLD", "authorises_drop": false,\n  "reason_codes": ["PET_IN_ZONE"], "hold_seconds": 60,\n  "valid_until": "…" }</pre></details>
@@ -688,7 +687,7 @@ function partnerSheet(id) {
     <div class="item" style="padding-left:0;padding-right:0"><span class="grow"><span class="t">Share drop instructions</span><span class="s">Zone name and your description</span></span><label class="switch"><input type="checkbox" id="share" ${l.shareInstructions ? 'checked' : ''} aria-label="Share drop instructions" /><span></span></label></div>
     <div class="btns">${l.linked ? '<button class="danger" id="unlink">Unlink</button><button class="primary" id="save">Save</button>' : '<button id="cancel">Not now</button><button class="primary" id="save">Link partner</button>'}</div>`, (el) => {
     $('#share', el).onchange = (e) => ($('#instrLine', el).textContent = e.target.checked ? 'Your zone name and description, as drop instructions' : 'Not your zone description (unless you turn it on below)');
-    $('#save', el).onclick = () => { S().partners[id] = { linked: true, zoneId: $('#zone', el).value, shareInstructions: $('#share', el).checked, linkedAt: l.linkedAt || Date.now() }; store.save(); closeSheet(); toast(`${p.name} linked (simulated preview)`); renderRoute(); };
+    $('#save', el).onclick = () => { S().partners[id] = { linked: true, zoneId: $('#zone', el).value, shareInstructions: $('#share', el).checked, linkedAt: l.linkedAt || Date.now() }; store.save(); closeSheet(); toast(`${p.name} linked`); renderRoute(); };
     $('#cancel', el) && ($('#cancel', el).onclick = closeSheet);
     $('#unlink', el) && ($('#unlink', el).onclick = () => { delete S().partners[id]; store.save(); closeSheet(); toast(`${p.name} unlinked`); renderRoute(); });
   });
@@ -698,13 +697,13 @@ function partnerSheet(id) {
 routes.settings = () => {
   setChrome({ title: 'Settings', tab: 'settings', right: connBadge() });
   const c = S().connection || {};
-  const method = { demo: 'Demo home (simulated)', oauth: 'Ring account (linked)', 'playground-token': 'Ring Developer Playground token', 'env-token': 'Ring token on the server' }[c.method] || 'Not connected';
+  const method = { demo: 'Demo home', oauth: 'Ring account (linked)', 'playground-token': 'Ring Developer Playground token', 'env-token': 'Ring token on the server' }[c.method] || 'Not connected';
   view(`<div class="sec-title">Ring</div>
     <div class="list"><div class="item"><span class="grow"><span class="t">${method}</span><span class="s">Camera: ${esc(S().camera?.name || '—')}</span></span></div>
       <button class="item" id="cam"><span class="grow"><span class="t">Change camera</span></span><span class="chev">›</span></button>
       <button class="item" id="disc"><span class="grow"><span class="t" style="color:var(--bad)">Disconnect Ring</span><span class="s">You can reconnect at any time</span></span></button></div>
     <div class="sec-title">Notifications & helpers</div>
-    <div class="list">${toggleRow('notifications', 'Phone notifications', 'Zone not clear, drone holding, delivered', S().settings.notifications)}${toggleRow('alexa', 'Alexa heads-up', 'Simulated Alexa+ add-on', S().settings.alexa)}${toggleRow('speak', 'Read heads-ups aloud here', 'Uses this phone’s speaker', S().settings.speak)}${toggleRow('petDoor', 'Smart pet door', 'Simulated · come-in-only after your yes', S().settings.petDoor)}${toggleRow('yardLights', 'Yard lights', 'Simulated · on at dusk after your yes', S().settings.yardLights !== false)}${toggleRow('sprinkler', 'Sprinkler controller', 'Simulated · run paused after your yes', S().settings.sprinkler !== false)}</div>
+    <div class="list">${toggleRow('notifications', 'Phone notifications', 'Zone not clear, drone holding, delivered', S().settings.notifications)}${toggleRow('alexa', 'Alexa heads-up', 'Spoken heads-up', S().settings.alexa)}${toggleRow('speak', 'Read heads-ups aloud here', 'Uses this phone’s speaker', S().settings.speak)}${toggleRow('petDoor', 'Smart pet door', 'Simulated · come-in-only after your yes', S().settings.petDoor)}${toggleRow('yardLights', 'Yard lights', 'On at dusk, after your yes', S().settings.yardLights !== false)}${toggleRow('sprinkler', 'Sprinkler controller', 'Paused during drops, after your yes', S().settings.sprinkler !== false)}</div>
     <div class="sec-title">Appearance</div>
     <div class="list"><div class="item"><span class="grow"><span class="t">Theme</span></span><select id="theme" style="width:auto">${['system', 'dark', 'light'].map((t) => `<option ${S().settings.theme === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div></div>
     <div class="sec-title">Privacy</div>
@@ -714,7 +713,7 @@ routes.settings = () => {
     <div class="list"><button class="item" id="tour"><span class="grow"><span class="t">Replay the welcome tour</span></span><span class="chev">›</span></button>
       <a class="item" href="../"><span class="grow"><span class="t">About DropZone</span></span><span class="chev">›</span></a>
       <a class="item" href="../demo.html"><span class="grow"><span class="t">Interactive demo for judges</span><span class="s">Scripted scenarios and the technical view</span></span><span class="chev">›</span></a></div>
-    <p class="mute small" style="text-align:center">DropZone · not affiliated with Ring, Amazon or any drone operator</p>`);
+    <p class="mute small" style="text-align:center">Demo home: camera replay, devices and carrier are not live.</p>`);
   bindToggles(viewEl());
   $('#theme').onchange = (e) => { S().settings.theme = e.target.value; store.save(); applyTheme(); };
   $('#cam').onclick = () => go('#/onboarding/camera');

@@ -134,3 +134,5 @@ ul.plain li { margin: 4px 0; }
 .audit-line.warn, .audit-line.error { border-left: 3px solid var(--unk); }
 .audit-line.ok { border-left: 3px solid var(--ok); }
 @media (prefers-reduced-motion: no-preference) { .sheet-card { animation: up .18s ease-out; } @keyframes up { from { transform: translateY(30px); opacity: .6; } } }
+
+.pcards{display:grid;gap:12px}.pcard{margin:0}.phead{display:flex;align-items:center;gap:10px;margin-bottom:4px}.phead .badge{margin-left:auto}.plogo{width:32px;height:32px;border-radius:8px;object-fit:contain;background:#fff}.pcard p{margin:0 0 10px}
