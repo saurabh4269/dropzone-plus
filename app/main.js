@@ -603,12 +603,23 @@ function renderLive() {
 function renderNext(s) {
   const next = $('#next');
   const linked = PARTNERS.filter((p) => S().partners[p.id]?.linked);
-  if (s && s.phase !== PHASE.DELIVERED) next.innerHTML = `<div class="card tight row"><span class="grow small">${isDemo() ? 'Demo clock runs 10× faster. ' : ''}Holds requested: ${s.holdsIssued}/3 · Pet door: ${s.petDoor.mode.replace('_', '-')}</span><button class="danger" id="cancel">End</button></div>`;
+  if (s && s.phase !== PHASE.DELIVERED) next.innerHTML = `<div class="card tight"><div class="row"><span class="grow small">${isDemo() ? 'Demo clock runs 10× faster. ' : ''}Holds requested: ${s.holdsIssued}/3 · Pet door: ${s.petDoor.mode.replace('_', '-')}</span><button class="danger" id="cancel">End</button></div>
+      <div class="btns" style="margin-top:10px"><button id="ownerHold">✋ Ask the drone to wait</button><button id="wrong">Detection looks wrong</button></div>
+      <p class="mute small" style="margin:8px 0 0">You can only ever ask it to wait. Its own sensors still decide when it’s safe.</p></div>`;
   else if (s?.receipt) next.innerHTML = `<div class="card"><h3>${placementText(s.receipt)}</h3><p class="mute small">Proof of drop saved in Deliveries.</p><div class="btns"><button onclick="location.hash='#/deliveries'">View proof</button><button class="primary" id="again">Done</button></div></div>`;
   else next.innerHTML = linked.length
     ? `<div class="card"><h3>No drone on the way</h3><p class="mute small">When a linked partner books a drone delivery, it shows up here. You can run a simulated one now.</p><button class="primary block" id="sim">Simulate a drone delivery</button></div>`
     : `<div class="card"><h3>No delivery partner linked</h3><p class="mute small">Link a drone delivery partner so they can wait when your zone is busy.</p><button class="primary block" onclick="location.hash='#/partners'">Link a partner</button></div>`;
   $('#cancel') && ($('#cancel').onclick = () => { stopDelivery(); renderRoute(); });
+  $('#ownerHold') && ($('#ownerHold').onclick = () => { // veto-only: an owner can add a HOLD, never remove one
+    const t = dNow();
+    const v = { status: STATUS.NOT_CLEAR, reasons: [{ code: 'OWNER_REQUESTED_HOLD' }], objects: [], observed_at: new Date(t).toISOString(), evaluated_at: new Date(t).toISOString(), stale_after: new Date(t + 90000).toISOString(), source: 'owner' };
+    delivery.session.observe(v); delivery.lastVerdict = v; toast('Asked the drone to wait (up to 90 s)'); renderLive();
+  });
+  $('#wrong') && ($('#wrong').onclick = () => openSheet(`<h3>What’s wrong?</h3><p class="mute small">Your answer stays on this phone and helps tune detection for your yard.</p><div class="stack"><button data-f="missed">It missed something in the zone</button><button data-f="false">Nothing is actually there</button><button data-f="zone">My zone is drawn wrong</button></div>`, (el) => el.querySelectorAll('[data-f]').forEach((b) => (b.onclick = () => {
+    (S().feedback ||= []).push({ at: Date.now(), kind: b.dataset.f, verdict: delivery.lastVerdict?.status, objects: (delivery.lastVerdict?.objects || []).map((o) => o.label) }); store.save(); closeSheet();
+    if (b.dataset.f === 'missed') $('#ownerHold')?.click(); else if (b.dataset.f === 'zone') go('#/zones'); else toast('Thanks, noted');
+  }))));
   $('#again') && ($('#again').onclick = () => { stopDelivery(); delivery.lastVerdict = null; renderRoute(); });
   $('#sim') && ($('#sim').onclick = () => linked.length > 1 ? openSheet(`<h3>Who’s delivering?</h3><div class="list">${linked.map((p) => `<button class="item" data-p="${p.id}"><span class="dot on" style="background:${p.color}"></span><span class="grow"><span class="t">${p.name}</span><span class="s">Example partner · simulated</span></span></button>`).join('')}</div>`, (el) => el.querySelectorAll('[data-p]').forEach((b) => (b.onclick = () => { closeSheet(); startDelivery(b.dataset.p); }))) : startDelivery(linked[0].id));
 }
