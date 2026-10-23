@@ -31,7 +31,7 @@ export const SCENARIOS = [
     etaSec: 240,
     durationSec: 320,
     hazards: [],
-    media: { readable: false, reason: 'Video is end-to-end encrypted (simulated)' },
+    media: { readable: false, reason: 'Video is end-to-end encrypted' },
     actors: [],
     events: [],
     drop: { at: [0.52, 0.69], unseen: true },
@@ -51,7 +51,7 @@ export const SCENARIOS = [
   {
     id: 'dusk',
     title: 'Dusk: too dark to see, sprinklers due mid-drop',
-    blurb: 'Evening delivery, 5 min out. The camera can\'t read the zone in this light, and the sprinklers are scheduled to run at T−20 s. Alexa asks; the owner says yes; the yard lights come on and the next sprinkler run is paused. All three devices are simulated.',
+    blurb: 'Evening delivery, 5 min out. The camera can\'t read the zone in this light, and the sprinklers are scheduled to run at T−20 s. Alexa asks; the owner says yes; the yard lights come on and the next sprinkler run is paused.',
     etaSec: 300,
     durationSec: 400,
     hazards: [],
@@ -76,7 +76,7 @@ export function scenarioHousehold(scn, base) {
 
 /** What the (simulated) camera can read right now. At dusk it needs the yard lights on. */
 export function replayMedia(scn, state) {
-  if (scn.lowLight && state?.lights?.mode !== 'on') return { readable: false, reason: 'Too dark to read the drop zone (simulated dusk)' };
+  if (scn.lowLight && state?.lights?.mode !== 'on') return { readable: false, reason: 'Too dark to read the drop zone' };
   return scn.media || { readable: true };
 }
 

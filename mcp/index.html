@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DropZone MCP client</title>
 <style>
-  :root { color-scheme: dark; --bg:#0b0f14; --card:#141b23; --line:#243040; --fg:#e8eef5; --mute:#8fa1b3; --ok:#3ecf8e; --warn:#f5a524; --bad:#ef4444; }
+  :root { color-scheme: light; --bg:#f5f7fa; --card:#ffffff; --line:#dde3ea; --fg:#121821; --mute:#5d6b7c; --accent:#0a84d6; --code:#f0f3f7; --out:#0b5cad; --in:#11734b; --err:#b42318; }
+  @media (prefers-color-scheme: dark) { :root { color-scheme: dark; --bg:#0b0f14; --card:#141b23; --line:#243040; --fg:#e8eef5; --mute:#8fa1b3; --accent:#1f6feb; --code:#05080b; --out:#7dd3fc; --in:#a7f3d0; --err:#fca5a5; } }
   * { box-sizing: border-box; }
   body { margin:0; font:15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--fg); }
   main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
@@ -13,8 +14,8 @@
   p.sub { color: var(--mute); margin: 0 0 20px; }
   .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin: 12px 0; }
   input { flex:1; min-width: 240px; background:var(--card); color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:10px 12px; font: inherit; }
-  button { background:#1f6feb; color:#fff; border:0; border-radius:8px; padding:10px 14px; font: inherit; cursor:pointer; }
-  button.sec { background: var(--card); border:1px solid var(--line); }
+  button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:10px 14px; font: inherit; cursor:pointer; }
+  button.sec { background: var(--card); color: var(--fg); border:1px solid var(--line); }
   button:disabled { opacity:.45; cursor:not-allowed; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin:12px 0; }
   .tool { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; border-top:1px solid var(--line); padding:10px 0; }
@@ -23,19 +24,22 @@
   .tool small { color: var(--mute); display:block; }
   .answer { font-size: 17px; }
   .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid var(--line); color:var(--mute); }
-  pre { background:#05080b; border:1px solid var(--line); border-radius:8px; padding:10px; overflow:auto; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; max-height: 420px; white-space: pre-wrap; word-break: break-word; }
-  .dir-out { color:#7dd3fc; } .dir-in { color:#a7f3d0; } .dir-err { color:#fca5a5; }
+  pre { background:var(--code); border:1px solid var(--line); border-radius:8px; padding:10px; overflow:auto; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; max-height: 420px; white-space: pre-wrap; word-break: break-word; }
+  .dir-out { color:var(--out); } .dir-in { color:var(--in); } .dir-err { color:var(--err); }
+  .head { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .badge { padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; background:#fff4d6; color:#7a5200; border:1px solid #f0d58a; }
+  code { background:var(--code); padding:1px 5px; border-radius:5px; font-size:13px; }
 </style>
 </head>
 <body>
 <main>
-  <h1>DropZone MCP client</h1>
-  <p class="sub">A real MCP client in the browser. It speaks MCP 2025-11-25 over Streamable HTTP to DropZone's own MCP server: <code>initialize</code>, <code>notifications/initialized</code>, <code>tools/list</code>, <code>tools/call</code>. Every request and response below is the actual wire traffic. This stands in for an Alexa+ add-on, which is not open to hackathon participants.</p>
+  <div class="head"><h1>DropZone MCP client</h1><span class="badge">Demo</span></div>
+  <p class="sub">Ask DropZone about your drop zone over MCP 2025-11-25 (Streamable HTTP). The wire log shows every request and response.</p>
 
   <div class="row">
     <input id="url" aria-label="MCP endpoint" value="">
     <button id="connect">Connect</button>
-    <button id="seed" class="sec" title="Pushes a SIMULATED replay verdict (scripted detections) to the server so there is something to ask about">Seed a replay verdict (simulated)</button>
+    <button id="seed" class="sec" title="Loads a replay check from the demo yard">Load demo check</button>
   </div>
   <div class="row"><span class="pill" id="session">not connected</span><span class="pill" id="proto">protocol: n/a</span><span class="pill" id="server">server: n/a</span></div>
 
@@ -47,7 +51,7 @@
 <script type="module">
 const $ = (id) => document.getElementById(id);
 const PROTOCOL = '2025-11-25';
-$('url').value = new URL('/mcp', location.href).href;
+$('url').value = new URL('../mcp', location.href).href;
 let sid = null, negotiated = null, nextId = 1;
 
 function log(dir, obj) {
@@ -111,15 +115,15 @@ async function call(name) {
 }
 
 async function seed() {
-  // SIMULATED: scripted detections from the replay scenario, evaluated by the real zone engine.
-  const { SCENARIOS, DEFAULT_ZONE, scriptedDetections } = await import('/scenarios.js');
-  const { evaluateZone } = await import('/core/zone.js');
+  // Demo: replay-scenario detections, evaluated by the real zone engine.
+  const { SCENARIOS, DEFAULT_ZONE, scriptedDetections } = await import('../scenarios.js');
+  const { evaluateZone } = await import('../core/zone.js');
   const scn = SCENARIOS[0];
   const now = Date.now();
-  const verdict = evaluateZone({ detections: scriptedDetections(scn, 20), zone: DEFAULT_ZONE, observedAt: now, now, source: 'replay (simulated scripted frame)' });
-  const delivery = { carrier: 'demo-carrier (simulated)', etaAt: now + 8 * 60000, originalEtaAt: now + 8 * 60000, ref: 'replay-demo' };
-  const r = await fetch('/api/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ verdict, delivery }) });
-  log(r.ok ? 'in' : 'err', `Seeded SIMULATED replay verdict: ${verdict.status} (HTTP ${r.status})`);
+  const verdict = evaluateZone({ detections: scriptedDetections(scn, 20), zone: DEFAULT_ZONE, observedAt: now, now, source: 'replay' });
+  const delivery = { carrier: 'Demo carrier', etaAt: now + 8 * 60000, originalEtaAt: now + 8 * 60000, ref: 'replay-demo' };
+  const r = await fetch('../api/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ verdict, delivery }) });
+  log(r.ok ? 'in' : 'err', `Loaded demo check: ${verdict.status} (HTTP ${r.status})`);
 }
 
 $('connect').onclick = connect;

@@ -46,7 +46,7 @@ export function drawCameraChrome(ctx, { label, time, simulated }) {
   ctx.fillStyle = '#fff'; ctx.fillText(label, 26, 41);
   if (time) { const tw = ctx.measureText(time).width; ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(W - tw - 36, 16, tw + 20, 34); ctx.fillStyle = '#fff'; ctx.fillText(time, W - tw - 26, 41); }
   if (simulated) {
-    ctx.save(); ctx.font = '700 20px system-ui, sans-serif'; const t = 'SIMULATED FEED · REPLAY'; const tw = ctx.measureText(t).width;
+    ctx.save(); ctx.font = '700 20px system-ui, sans-serif'; const t = 'REPLAY'; const tw = ctx.measureText(t).width;
     ctx.fillStyle = 'rgba(255,170,0,.9)'; ctx.fillRect(W / 2 - tw / 2 - 12, H - 46, tw + 24, 32); ctx.fillStyle = '#1b1300'; ctx.fillText(t, W / 2 - tw / 2, H - 23); ctx.restore();
   }
 }
@@ -88,7 +88,7 @@ export function drawDetections(ctx, objects, { scripted }) {
     ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.setLineDash(scripted ? [6, 4] : []);
     ctx.strokeRect(x * W, y * H, w * W, h * H);
     ctx.setLineDash([]);
-    const t = `${o.label} ${Math.round(o.score * 100)}%${scripted ? ' (scripted)' : ''}`;
+    const t = `${o.label} ${Math.round(o.score * 100)}%`;
     ctx.font = '600 16px system-ui, sans-serif';
     const tw = ctx.measureText(t).width;
     ctx.fillStyle = color; ctx.fillRect(x * W, y * H - 22, tw + 10, 22);

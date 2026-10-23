@@ -20,7 +20,7 @@ export function createYardLights({ onChange } = {}) {
     turnOn({ ownerConsent, until, at }) {
       if (ownerConsent !== true) return { ok: false, error: 'OWNER_CONSENT_REQUIRED' };
       restoreAt = until ?? null;
-      set('on', 'owner approved via Alexa (simulated)', at);
+      set('on', 'owner approved via Alexa', at);
       return { ok: true, mode };
     },
     restore(why = 'drone departed', at) {

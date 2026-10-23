@@ -47,7 +47,7 @@
   </section>
 
   <ol class="steps">
-    <li><b>Ring sees the zone</b><span>Ring frames → CLEAR / NOT CLEAR / UNKNOWN, timestamped, expires in 90 s</span></li>
+    <li><b>Ring sees the zone</b><span>CLEAR, NOT CLEAR or UNKNOWN, valid for 90 s</span></li>
     <li><b>Alexa tells the household</b><span>“There's a dog in the drop zone, drone in 8 min”</span></li>
     <li><b>Devices help, with your yes</b><span>Pet door goes come-in-only, yard lights come on at dusk, the sprinkler run is paused, then each restores itself</span></li>
     <li><b>Carrier gets one bit</b><span>A HOLD if the zone is not clear. No video leaves the home.</span></li>
@@ -69,9 +69,9 @@
         <div id="editHint" class="hint hidden"></div>
       </div>
       <div class="cam-foot">
-        <span id="srcLabel">source: —</span>
-        <span id="obsLabel">observed: —</span>
-        <span id="detLabel">detector: —</span>
+        <span id="srcLabel">source: none</span>
+        <span id="obsLabel">observed: none</span>
+        <span id="detLabel">detector: none</span>
       </div>
       <div id="audit" class="audit"></div>
     </section>
@@ -82,7 +82,7 @@
         <div class="show">
           <div id="statusBig" class="status unknown" role="status" aria-live="polite">UNKNOWN</div>
           <div class="eta"><span id="etaText">No delivery inbound</span></div>
-          <div id="reasonText" class="reason">—</div>
+          <div id="reasonText" class="reason"></div>
           <div class="speech"><span class="ring-light" aria-hidden="true"></span><p id="speechText" aria-live="polite">“Alexa” lines appear here.</p></div>
           <div id="promptBox" class="prompt hidden">
             <p id="promptQ"></p>
@@ -97,23 +97,23 @@
         <div class="kv"><span>Advisory</span><b id="adviceText">NO_ADVISORY</b></div>
         <div class="kv"><span>Holds requested</span><b id="holdsText">0 / 3</b></div>
         <details><summary>GET /api/v1/advisory</summary><pre id="advJson"></pre></details>
-        <p class="fine">The carrier only ever receives HOLD or NO_ADVISORY. Never video.</p>
+        <p class="fine">HOLD or NO_ADVISORY only. Never video.</p>
       </section>
 
       <section class="panel door">
         <div class="panel-h"><h2>Pet door</h2></div>
         <div class="kv"><span>Mode</span><b id="doorText">normal</b></div>
-        <p class="fine">Changes only after the owner says yes. Restores itself after the drop or after 15 min.</p>
+        <p class="fine">Changes only after your yes.</p>
       </section>
       <section class="panel door">
         <div class="panel-h"><h2>Yard lights</h2></div>
         <div class="kv"><span>Mode</span><b id="lightsText">off</b></div>
-        <p class="fine">Offered at dusk so the camera can read the zone. On only after the owner says yes; off again after the drop or 15 min.</p>
+        <p class="fine">On at dusk, after your yes.</p>
       </section>
       <section class="panel door">
         <div class="panel-h"><h2>Sprinkler</h2></div>
         <div class="kv"><span>Mode</span><b id="sprinklerText">scheduled</b></div>
-        <p class="fine">Offered when a run falls in the drop window. Paused only after the owner says yes; schedule restores after the drop or 15 min.</p>
+        <p class="fine">Paused during drops, after your yes.</p>
       </section>
       <section class="panel receipt">
         <div class="panel-h"><h2>Proof of drop</h2></div>

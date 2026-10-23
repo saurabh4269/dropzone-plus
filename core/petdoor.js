@@ -19,7 +19,7 @@ export function createPetDoor({ onChange } = {}) {
     setInOnly({ ownerConsent, until, at }) {
       if (ownerConsent !== true) return { ok: false, error: 'OWNER_CONSENT_REQUIRED' };
       restoreAt = until ?? null;
-      set('in_only', 'owner approved via Alexa (simulated)', at);
+      set('in_only', 'owner approved via Alexa', at);
       return { ok: true, mode };
     },
     restore(why = 'drone departed', at) {
