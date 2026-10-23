@@ -1,6 +1,6 @@
 import { evaluateZone, freshen, auditZone, suggestZone, polygonCentroid, STATUS } from './core/zone.js';
 import { createSession, PHASE } from './core/engine.js';
-import { SCENARIOS, DEFAULT_ZONE, actorAt, sizeAt, scriptedDetections } from './scenarios.js';
+import { SCENARIOS, DEFAULT_ZONE, actorAt, sizeAt, scriptedDetections, scenarioHousehold, replayMedia } from './scenarios.js';
 import { W, H, drawYard, drawCameraChrome, drawActor, drawPolygon, drawDetections, drawDrone, drawPackage, drawUnreadable } from './scene.js';
 import { loadDetector, detect } from './detector.js';
 import { findNewObject } from './core/changes.js';
@@ -32,7 +32,7 @@ const fmtDur = (s) => { s = Math.max(0, Math.round(s)); return `${Math.floor(s /
 
 // ---------- session + events ----------
 function newSession() {
-  app.session = createSession({ zone: app.zone, hazards: app.hazards, household: { hasPetDoor: true }, emit: onEvent, now });
+  app.session = createSession({ zone: app.zone, hazards: app.hazards, household: app.mode === 'replay' ? scenarioHousehold(app.scn, app.simBase) : { hasPetDoor: true }, emit: onEvent, now });
   $('timeline').innerHTML = '';
   $('receiptBox').textContent = 'No delivery yet.';
   $('promptBox').classList.add('hidden');
@@ -62,6 +62,12 @@ function onEvent(type, e) {
   } else if (type === 'owner') {
     $('promptBox').classList.add('hidden');
     text = `Owner answered ${e.yes ? 'YES' : 'NO'}${app._autoAnswer ? ' (auto-answered in replay)' : ''}`;
+  } else if (type === 'lights') {
+    $('lightsText').textContent = e.mode;
+    text = `Yard lights → ${e.mode} (${e.why})`;
+  } else if (type === 'sprinkler') {
+    $('sprinklerText').textContent = e.mode;
+    text = `Sprinkler → ${e.mode} (${e.why})`;
   } else if (type === 'petdoor') {
     $('doorText').textContent = e.mode.replace('_', '-');
     text = `Pet door → ${e.mode.replace('_', '-')} (${e.why})`;
@@ -142,13 +148,15 @@ function loadScenario(id) {
   $('playBtn').textContent = '▶ Play';
   $('scenarioBlurb').textContent = app.scn.blurb;
   $('doorText').textContent = 'normal';
+  $('lightsText').textContent = 'off';
+  $('sprinklerText').textContent = app.scn.sprinklerAtSec ? `scheduled (T−${app.scn.etaSec - app.scn.sprinklerAtSec} s)` : 'scheduled';
   newSession();
   replayObserve();
   app.session.startDelivery({ etaAt: app.simBase + app.scn.etaSec * 1000, carrier: 'Simulated carrier' });
 }
 
 function replayObserve() {
-  observe({ detections: scriptedDetections(app.scn, app.simT), media: app.scn.media || { readable: true }, observedAt: now(), source: 'replay', scripted: true });
+  observe({ detections: scriptedDetections(app.scn, app.simT), media: replayMedia(app.scn, app.session?.state), observedAt: now(), source: 'replay', scripted: true });
 }
 
 function replayStep(dt) {
@@ -221,6 +229,7 @@ function draw() {
     else {
       drawYard(ctx);
       for (const a of app.scn.actors) { const p = actorAt(a, app.simT); if (p) drawActor(ctx, a.emoji, p.x, p.y, sizeAt(a, p.y)); }
+      if (app.scn.lowLight) { ctx.save(); ctx.fillStyle = s.lights?.mode === 'on' ? 'rgba(10,14,40,.25)' : 'rgba(5,8,25,.82)'; ctx.fillRect(0, 0, W, H); ctx.restore(); } // simulated dusk
     }
   } else if (app.view === 'video') {
     const vid = $('liveVideo');

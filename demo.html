@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DropZone+ · Ring checks the drop zone before the drone arrives</title>
-  <meta name="description" content="A Ring camera checks your yard's drone drop zone before the drone arrives. Alexa tells the household, a pet door can help, the carrier gets a veto-only HOLD." />
+  <title>DropZone · Ring checks the drop zone before the drone arrives</title>
+  <meta name="description" content="A Ring camera checks your yard's drone drop zone before the drone arrives. Alexa tells you what is in the way, your pet door, yard lights and sprinkler help with your yes, and the carrier gets a HOLD signal before landing." />
   <link rel="stylesheet" href="./style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛬</text></svg>" />
 </head>
 <body>
   <header class="top">
-    <a class="brand" href="./" title="DropZone+ home" style="color:inherit;text-decoration:none">
+    <a class="brand" href="./" title="DropZone home" style="color:inherit;text-decoration:none">
       <span class="logo">◎</span>
       <div>
         <h1>DropZone<span class="plus">+</span></h1>
@@ -45,13 +45,13 @@
     <button id="orderBtn">🚁 Simulate drone order (ETA 3 min)</button>
     <button id="proofBtn">📦 Proof-of-drop snapshot</button>
     <label class="chk"><input type="checkbox" id="speakChk2" /> 🔊 Speak</label>
-    <p class="blurb">LIVE: frames come from the Ring Partner API (Ring Developer Playground). Carrier, Alexa and pet door remain simulated.</p>
+    <p class="blurb">LIVE: frames come from the Ring Partner API (Ring Developer Playground). Carrier, Alexa, pet door, yard lights and sprinkler remain simulated.</p>
   </section>
 
   <ol class="steps">
     <li><b>Ring sees the zone</b><span>Ring frames → CLEAR / NOT CLEAR / UNKNOWN, timestamped, expires in 90 s</span></li>
     <li><b>Alexa tells the household</b><span>“There's a dog in the drop zone, drone in 8 min”</span></li>
-    <li><b>Devices help, with your yes</b><span>Pet door goes come-in-only, then restores itself</span></li>
+    <li><b>Devices help, with your yes</b><span>Pet door goes come-in-only, yard lights come on at dusk, the sprinkler run is paused, then each restores itself</span></li>
     <li><b>Carrier gets one bit</b><span>HOLD or nothing. Never video, never “safe to land”</span></li>
   </ol>
 
@@ -107,6 +107,16 @@
         <div class="kv"><span>Mode</span><b id="doorText">normal</b></div>
         <p class="fine">Changes only after the owner says yes. Restores itself after the drop or after 15 min.</p>
       </section>
+      <section class="panel door">
+        <div class="panel-h"><h2>Yard lights <small>simulated smart lights</small></h2></div>
+        <div class="kv"><span>Mode</span><b id="lightsText">off</b></div>
+        <p class="fine">Offered at dusk so the camera can read the zone. On only after the owner says yes; off again after the drop or 15 min.</p>
+      </section>
+      <section class="panel door">
+        <div class="panel-h"><h2>Sprinkler <small>simulated irrigation controller</small></h2></div>
+        <div class="kv"><span>Mode</span><b id="sprinklerText">scheduled</b></div>
+        <p class="fine">Offered when a run falls in the drop window. Paused only after the owner says yes; schedule restores after the drop or 15 min.</p>
+      </section>
       <section class="panel receipt">
         <div class="panel-h"><h2>Proof of drop</h2></div>
         <div id="receiptBox" class="fine">No delivery yet.</div>
@@ -128,7 +138,7 @@
 
   <footer>
     <p><b>What's real:</b> the zone logic, the veto-only advisory, the timing/expiry rules, in-browser object detection on photos you upload or Ring frames, and (LIVE mode) calls to the Ring Partner API.
-      <b>What's simulated:</b> the replay yard and its scripted detections, the carrier, the Alexa+ add-on, the pet door. Nothing here is affiliated with any drone operator.</p>
+      <b>What's simulated:</b> the replay yard and its scripted detections, the carrier, the Alexa+ add-on, the pet door, the yard lights, the sprinkler. Nothing here is affiliated with any drone operator.</p>
     <p><a href="https://github.com/saurabh4269/dropzone-plus">Source on GitHub (MIT)</a></p>
   </footer>
 

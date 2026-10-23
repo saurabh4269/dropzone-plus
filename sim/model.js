@@ -1,4 +1,4 @@
-// DropZone+ 3D simulation: pure, deterministic scene model (no DOM, no three.js).
+// DropZone 3D simulation: pure, deterministic scene model (no DOM, no three.js).
 // Everything here is a function of (scenario, simulated time), so the page can scrub freely and the
 // tests can run in Node. World units are metres; y is up; the house wall is the plane z = 0 and the
 // yard extends towards +z. The real decision logic is imported, not re-implemented.
