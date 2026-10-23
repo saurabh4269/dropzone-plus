@@ -74,7 +74,7 @@ The Playground can't send webhooks, so [`scripts/simulate-events.js`](scripts/si
 | Replay yard, actors and their "detections" | **Simulated**: a drawn scene with **scripted** boxes, labelled "SIMULATED FEED · REPLAY" and "(scripted)" on screen |
 | Alexa | **Simulated Alexa+ add-on**: utterances and consent prompts, spoken with browser TTS. Also exposed as an **MCP server** ([`mcp/dropzone-mcp.js`](mcp/dropzone-mcp.js)), the interface Alexa+ add-ons use. There is no public Alexa+ access for this hackathon |
 | Smart pet door | **Simulated** adapter (modelled on Alexa-compatible doors such as Wayzn/Pawport) |
-| Amazon Bedrock (Nova) frame description | **Optional and untested**; off by default ([`lib/bedrock.js`](lib/bedrock.js)) |
+| Amazon Bedrock (Nova) frame description | **Optional**, off by default; exercised up to AWS auth, not yet run with real credentials ([`lib/bedrock.js`](lib/bedrock.js)) |
 
 Nothing here is affiliated with, endorsed by, or connected to any drone operator.
 
@@ -117,7 +117,7 @@ npm start                          # UI switches to LIVE: Discover → Check zon
 RING_WEBHOOK_SECRET=dev-secret npm run sim -- human   # (other terminal) simulated signed webhook → re-check
 ```
 
-Add `?replay` to the URL to force replay mode while a token is set. `?scenario=pool&seek=200` jumps into a scenario. `?photo=<image-url>` runs real detection on any CORS-readable image.
+The server listens on `127.0.0.1` by default (set `HOST=0.0.0.0` deliberately; in LIVE mode it proxies your camera). Add `?replay` to the URL to force replay mode while a token is set. `?scenario=pool&seek=200` jumps into a scenario. `?photo=<image-url>` runs real detection on any CORS-readable image.
 
 **MCP (simulated Alexa+ add-on surface):**
 

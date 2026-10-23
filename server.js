@@ -16,6 +16,7 @@ import { bedrockAvailable, describeWithBedrock } from './lib/bedrock.js';
 
 const ROOT = fileURLToPath(new URL('./public/', import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
+const HOST = process.env.HOST || '127.0.0.1'; // localhost by default: in LIVE mode this proxies your camera
 const WEBHOOK_SECRET = process.env.RING_WEBHOOK_SECRET || 'dev-secret';
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon' };
 
@@ -167,6 +168,6 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`DropZone+ on http://localhost:${PORT}  mode=${ringConfigured() ? 'LIVE (Ring Playground token present)' : 'REPLAY (no RING_ACCESS_TOKEN)'}`);
+server.listen(PORT, HOST, () => {
+  console.log(`DropZone+ on http://${HOST}:${PORT}  mode=${ringConfigured() ? 'LIVE (Ring Playground token present)' : 'REPLAY (no RING_ACCESS_TOKEN)'}`);
 });
