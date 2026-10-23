@@ -9,7 +9,7 @@ Deadline: **Sat 24 Oct 2026, 00:30 IST (Fri 12:00 PT)**. After you submit, pin t
   - Ring webhooks: HMAC verification and idempotency, plus a signed event simulator (`npm run sim`).
   - Carrier contract `GET /api/v1/advisory` is veto-only (HOLD or NO_ADVISORY, `authorises_drop:false`).
   - MCP server (`mcp/dropzone-mcp.js`) as the "simulated Alexa+ add-on" surface.
-  - Optional Amazon Bedrock (Nova Lite) path. **Untested**, off by default.
+  - Optional Amazon Bedrock (Nova Lite, Converse API) detector, off by default. When it's enabled, the UI uses it for Ring snapshots. It has been tested up to AWS authentication only.
   - "Test a photo" runs real detection on any uploaded yard photo. You can answer the Alexa prompt by voice in Chrome.
   - 16 unit tests (`npm test`) cover zone logic, the veto-only advisory, consent gating, the full delivery window, HMAC and idempotency.
 - **Live demo (replay, static):** https://saurabh4269.github.io/dropzone-plus/. It is served from the `gh-pages` branch; republish with `./scripts/deploy-pages.sh`.
@@ -52,7 +52,16 @@ Script (about 2:45):
 
 Say "simulated" whenever the carrier, Alexa or the pet door is on screen. Don't show the Alexa+ logo (not permitted, forum 45450).
 
-### 3. Devpost form
+### 3. (Optional) AWS Builder: only if you have working AWS credentials
+You need an AWS account with Bedrock access to `amazon.nova-lite-v1:0` in us-east-1. Then run:
+```bash
+npm i @aws-sdk/client-bedrock-runtime
+export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_REGION=us-east-1
+DZ_BEDROCK=1 npm start
+```
+The camera footer should read "detector: Amazon Bedrock …". A project can win only one mini-challenge, so **Open Source is the safer bet**: its repo is finished and tested.
+
+### 4. Devpost form
 - **Name:** DropZone+
 - **Tagline:** Your Ring camera checks the drone drop zone before the drone arrives.
 - **Track:** Ring. Mini-challenge: **Open Source** (with the separate repo below). AWS Builder is only worth entering if you get Bedrock running (see Risks).
