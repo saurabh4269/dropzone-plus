@@ -44,7 +44,7 @@ const checks = [
 ];
 let failed = 0;
 for (const c of checks) {
-  await cdp('Page.navigate', { url: `${base}?${c.q}` });
+  await cdp('Page.navigate', { url: `${base}demo.html?${c.q}` });
   await sleep(1800);
   if (c.before) { await evaluate(c.before); await sleep(500); }
   const bad = [];
@@ -54,6 +54,24 @@ for (const c of checks) {
   console.log(`${bad.length ? 'FAIL' : 'ok  '} ${c.name}${bad.length ? '  ' + bad.join(' ') : ''}`);
   failed += bad.length ? 1 : 0;
 }
+// Landing page: links to the app and the demo.
+await cdp('Page.navigate', { url: base });
+await sleep(800);
+{
+  const ok = await evaluate(`!!document.querySelector('a[href="./app/"]') && !!document.querySelector('a[href="./demo.html"]')`);
+  console.log(`${ok ? 'ok  ' : 'FAIL'} landing page links to ./app/ and ./demo.html`);
+  failed += ok ? 0 : 1;
+}
+// Old root links with demo params redirect to demo.html.
+await cdp('Page.navigate', { url: `${base}?scenario=pool&seek=240` });
+await sleep(1800);
+{
+  const href = await evaluate('location.href');
+  const audit = await evaluate(text('audit'));
+  const ok = /\/demo\.html\?scenario=pool&seek=240$/.test(href) && /Pool is ~\d+ ft/.test(audit || '');
+  console.log(`${ok ? 'ok  ' : 'FAIL'} root ?scenario=pool&seek=240 redirects to demo.html  ${ok ? '' : href}`);
+  failed += ok ? 0 : 1;
+}
 if (exceptions.length) { console.log('page exceptions:', exceptions); failed++; }
-console.log(failed ? `${failed} check(s) failed` : `all ${checks.length} browser checks passed`);
+console.log(failed ? `${failed} check(s) failed` : `all ${checks.length + 2} browser checks passed`);
 done(failed ? 1 : 0);

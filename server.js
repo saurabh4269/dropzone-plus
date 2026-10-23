@@ -13,6 +13,7 @@ import { ring, ringConfigured, pickDevice, summarizeDevice, callLog, RingError, 
 import { verify, firstDelivery } from './lib/webhook.js';
 import { buildAdvisory } from './public/core/advisory.js';
 import { bedrockAvailable, describeWithBedrock } from './lib/bedrock.js';
+import { oauthConfigured, authorizeUrl, handleCallback, maskEmail } from './lib/oauth.js';
 
 const ROOT = fileURLToPath(new URL('./public/', import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -52,6 +53,11 @@ async function deviceId() {
   return d.id;
 }
 
+// ?device=<id> picks a specific camera (the app lets the user choose); default = first device.
+const pickId = async (req) => new URL(req.url, 'http://x').searchParams.get('device') || deviceId();
+const isLocal = (req) => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
+let linkInfo = null; // { method: 'oauth'|'playground-token', account, at }
+
 async function attempt(fn) {
   try { return { ok: true, data: await fn() }; }
   catch (e) { return { ok: false, status: e.status || 500, error: e.message }; }
@@ -60,12 +66,59 @@ async function attempt(fn) {
 const routes = {
   'GET /api/config': async () => ({
     mode: ringConfigured() ? 'live' : 'replay',
+    link: linkInfo || (ringConfigured() ? { method: 'env-token' } : null),
+    oauth: { available: oauthConfigured() },
     ring: { configured: ringConfigured(), api: RING_API, official: RING_API === 'https://api.amazonvision.com' },
     webhook: { endpoint: '/webhooks/ring', secretIsDefault: !process.env.RING_WEBHOOK_SECRET },
     vision: { browser: 'coco-ssd (TensorFlow.js)', bedrock: await bedrockAvailable() },
   }),
 
   // Discovery: every call is attempted and reported separately, because Playground endpoints fail independently.
+  // Devices for the app's camera picker: user-assigned names + online state (UX guide: never show raw IDs).
+  'GET /api/ring/devices': async () => {
+    if (!ringConfigured()) return { connected: false, devices: [] };
+    const doc = await ring.devices();
+    return { connected: true, link: linkInfo, devices: (doc.data || []).map((d) => { const x = summarizeDevice(d, doc.included); return { id: x.id, name: x.name, online: x.online, kind: x.kind }; }) };
+  },
+
+  // Playground fallback: paste a Ring Developer Playground token (localhost only; it lives in memory, ~30 min).
+  'POST /api/ring/token': async (req, res) => {
+    if (!isLocal(req)) return send(res, 403, { error: 'token can only be set from this machine' });
+    const { token } = JSON.parse((await readBody(req)).toString('utf8') || '{}');
+    if (!token || token.length < 20) return send(res, 400, { error: 'that does not look like a Playground access token' });
+    process.env.RING_ACCESS_TOKEN = token.trim();
+    cachedDeviceId = null;
+    const me = await attempt(() => ring.me());
+    if (!me.ok) { delete process.env.RING_ACCESS_TOKEN; return send(res, 401, { error: `Ring rejected the token (${me.status}). Playground tokens expire after ~30 minutes.` }); }
+    linkInfo = { method: 'playground-token', at: new Date().toISOString() };
+    return { ok: true, link: linkInfo };
+  },
+  'DELETE /api/ring/token': async (req, res) => {
+    if (!isLocal(req)) return send(res, 403, { error: 'forbidden' });
+    if (linkInfo?.method === 'oauth') await attempt(() => ring.removeIntegration()); // docs: partner-side unlink
+    delete process.env.RING_ACCESS_TOKEN;
+    cachedDeviceId = null; linkInfo = null;
+    return { ok: true };
+  },
+
+  // Partner-Initiated OAuth 2.0 account linking (needs partner credentials from Ring onboarding).
+  'GET /auth/ring/start': async (req, res) => {
+    if (!oauthConfigured()) return send(res, 501, { error: 'Ring account linking needs partner credentials (RING_CLIENT_ID, RING_CLIENT_SECRET, RING_REDIRECT_URI) issued during Ring partner onboarding.' });
+    res.writeHead(302, { Location: authorizeUrl().url }); res.end();
+  },
+  'GET /auth/ring/callback': async (req, res) => {
+    const r = await handleCallback(new URL(req.url, 'http://x').searchParams);
+    const back = (q) => { res.writeHead(302, { Location: `/app/#/onboarding/linked?${q}` }); res.end(); };
+    if (!r.ok) return back(new URLSearchParams({ error: r.error, error_description: r.description || '' }));
+    process.env.RING_ACCESS_TOKEN = r.tokens.access_token;
+    cachedDeviceId = null;
+    const me = await attempt(() => ring.me());
+    const email = me.data?.data?.attributes?.email;
+    const done = await attempt(() => ring.completeIntegration(maskEmail(email)));
+    linkInfo = { method: 'oauth', at: new Date().toISOString(), completed: done.ok };
+    back(new URLSearchParams({ ok: '1' }));
+  },
+
   'GET /api/ring/discover': async () => {
     if (!ringConfigured()) return { mode: 'replay' };
     const me = await attempt(() => ring.me());
@@ -82,7 +135,7 @@ const routes = {
   'GET /api/ring/snapshot': async (req, res) => {
     if (!ringConfigured()) return send(res, 409, { readable: false, reason: 'replay mode: no Ring token' });
     let snap;
-    try { snap = await ring.snapshot(await deviceId()); }
+    try { snap = await ring.snapshot(await pickId(req)); }
     catch (e) { return send(res, 502, { readable: false, reason: e.message }); }
     if (!snap.ok) return send(res, 502, { readable: false, status: snap.status, reason: snap.reason });
     send(res, 200, snap.bytes, {
@@ -95,7 +148,7 @@ const routes = {
 
   'POST /api/ring/whep': async (req, res) => {
     const sdp = (await readBody(req)).toString('utf8');
-    return ring.whepStart(await deviceId(), sdp);
+    return ring.whepStart(await pickId(req), sdp);
   },
   'DELETE /api/ring/whep': async (req) => {
     const { sessionUrl } = JSON.parse((await readBody(req)).toString('utf8') || '{}');
