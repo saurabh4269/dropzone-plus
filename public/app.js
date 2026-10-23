@@ -192,11 +192,13 @@ function draw() {
   } else if (app.image) {
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
     ctx.drawImage(app.image, ...app.imageRect);
+  } else {
+    drawUnreadable(ctx, app.last?.media?.reason || (app.mode === 'live' ? 'Waiting for a Ring frame…' : ''));
   }
 
   for (const h of app.hazards) drawPolygon(ctx, h.polygon, { stroke: '#4cc3ff', fill: 'rgba(76,195,255,.15)', dash: [4, 4], label: h.kind });
   const color = v.status === STATUS.CLEAR ? '#2fbf71' : v.status === STATUS.NOT_CLEAR ? '#ff5a4f' : '#f0b429';
-  drawPolygon(ctx, app.zone, { stroke: color, fill: color + '22', dash: [12, 8], width: 4, label: 'DROP ZONE · ' + v.status.replace('_', ' '), labelColor: '#111' });
+  drawPolygon(ctx, app.zone, { stroke: color, fill: color + '18', dash: [12, 8], width: 4, label: 'DROP ZONE · ' + v.status.replace('_', ' '), labelColor: '#111', labelBelow: true });
   if (v.status !== STATUS.UNKNOWN || v.reasons?.[0]?.code === 'EXPIRED') drawDetections(ctx, s.verdict?.objects, { scripted: s.verdict?.scripted });
 
   // drone + package (replay only; live drops come from a real snapshot)
@@ -302,7 +304,7 @@ async function startLive() {
   pc.addTransceiver('video', { direction: 'recvonly' });
   pc.addTransceiver('audio', { direction: 'recvonly' }); // docs say recvonly; the sample's sendrecv is not needed
   const vid = $('liveVideo');
-  pc.ontrack = (e) => { if (e.streams[0]) { vid.srcObject = e.streams[0]; app.view = 'video'; $('frameBtn').disabled = false; } };
+  pc.ontrack = (e) => { if (e.streams[0] && e.track.kind === 'video') { vid.srcObject = e.streams[0]; vid.play().catch(() => {}); app.view = 'video'; $('frameBtn').disabled = false; } };
   await pc.setLocalDescription(await pc.createOffer());
   await new Promise((r) => { if (pc.iceGatheringState === 'complete') return r(); const t = setTimeout(r, 3000); pc.onicegatheringstatechange = () => pc.iceGatheringState === 'complete' && (clearTimeout(t), r()); });
   const res = await fetch('./api/ring/whep', { method: 'POST', headers: { 'Content-Type': 'application/sdp' }, body: pc.localDescription.sdp });

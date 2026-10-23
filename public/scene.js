@@ -61,7 +61,7 @@ export function drawActor(ctx, emoji, x, y, size) {
   ctx.restore();
 }
 
-export function drawPolygon(ctx, poly, { stroke, fill, dash = [], width = 3, label, labelColor = '#fff' }) {
+export function drawPolygon(ctx, poly, { stroke, fill, dash = [], width = 3, label, labelColor = '#fff', labelBelow = false }) {
   if (!poly || poly.length < 2) return;
   ctx.save();
   ctx.beginPath();
@@ -70,7 +70,8 @@ export function drawPolygon(ctx, poly, { stroke, fill, dash = [], width = 3, lab
   if (fill) { ctx.fillStyle = fill; ctx.fill(); }
   ctx.setLineDash(dash); ctx.lineWidth = width; ctx.strokeStyle = stroke; ctx.stroke();
   if (label) {
-    const [x, y] = poly[0];
+    let [x, y] = poly[0];
+    if (labelBelow) { x = Math.min(...poly.map((p) => p[0])); y = Math.max(...poly.map((p) => p[1])) + 34 / H; }
     ctx.font = '700 18px system-ui, sans-serif';
     const tw = ctx.measureText(label).width;
     ctx.setLineDash([]); ctx.fillStyle = stroke; ctx.fillRect(x * W, y * H - 28, tw + 14, 26);

@@ -47,6 +47,13 @@
     <p class="blurb">LIVE: frames come from the Ring Partner API (Ring Developer Playground). Carrier, Alexa and pet door remain simulated.</p>
   </section>
 
+  <ol class="steps">
+    <li><b>Ring sees the zone</b><span>Ring frames → CLEAR / NOT CLEAR / UNKNOWN, timestamped, expires in 90 s</span></li>
+    <li><b>Alexa tells the household</b><span>“There's a dog in the drop zone, drone in 8 min”</span></li>
+    <li><b>Devices help, with your yes</b><span>Pet door goes come-in-only, then restores itself</span></li>
+    <li><b>Carrier gets one bit</b><span>HOLD or nothing. Never video, never “safe to land”</span></li>
+  </ol>
+
   <main class="grid">
     <section class="panel cam">
       <div class="panel-h">
@@ -59,7 +66,7 @@
       </div>
       <div class="stage">
         <canvas id="cam" width="1280" height="720"></canvas>
-        <video id="liveVideo" class="hidden" playsinline muted autoplay></video>
+        <video id="liveVideo" playsinline muted autoplay></video>
         <div id="editHint" class="hint hidden"></div>
       </div>
       <div class="cam-foot">
