@@ -10,6 +10,7 @@ Ring sees the zone, Alexa tells the household (simulated Alexa+ add-on), a smart
 | 📱 **App (installable PWA)** | https://saurabh4269.github.io/dropzone-plus/app/ |
 | 🧪 **Interactive judge demo** (replay, no login, no token) | https://saurabh4269.github.io/dropzone-plus/demo.html |
 | 🌐 **Website** | https://saurabh4269.github.io/dropzone-plus/ |
+| 🧊 **3D physical simulation** (Ring view vs drone-side view, OpenLander/MDPI comparison) | https://saurabh4269.github.io/dropzone-plus/sim/ · [docs/COMPARISON.md](docs/COMPARISON.md) |
 | 🎬 **Demo video** | https://vimeo.com/1238833557 |
 | 🧾 **Friction log** | [FRICTION.md](FRICTION.md) |
 | 🧰 **Open-source companion** (Ring Partner API mock + signed webhook simulator) | https://github.com/saurabh4269/ring-partner-sandbox |
