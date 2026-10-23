@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { mapLabels, detectLabels, rekognitionAvailable } from '../lib/rekognition.js';
 import { evaluateZone } from '../public/core/zone.js';
 
-test('DetectLabels instances map to DropZone+ detections; pools become hazard hints, not detections', () => {
+test('DetectLabels instances map to DropZone detections; pools become hazard hints, not detections', () => {
   const { detections, hazards } = mapLabels([
     { Name: 'Dog', Confidence: 98, Instances: [{ Confidence: 97.8, BoundingBox: { Left: 0.45, Top: 0.55, Width: 0.1, Height: 0.15 } }] },
     { Name: 'Swimming Pool', Confidence: 91, Instances: [] },

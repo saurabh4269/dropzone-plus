@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // SIMULATED Ring webhook feeder. The Ring Playground cannot emit webhooks, so this posts
-// Ring v1.1-shaped, HMAC-signed events to DropZone+'s /webhooks/ring endpoint.
+// Ring v1.1-shaped, HMAC-signed events to DropZone's /webhooks/ring endpoint.
 // Usage: RING_WEBHOOK_SECRET=dev-secret node scripts/simulate-events.js [motion|human|other_motion|ding] [url]
 
 import { sign, ringEvent } from '../lib/webhook.js';

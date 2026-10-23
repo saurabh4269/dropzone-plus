@@ -27,7 +27,7 @@ export const SCENARIOS = [
   {
     id: 'unknown',
     title: 'Camera can\'t see (offline / end-to-end encrypted)',
-    blurb: 'The frame can\'t be read. DropZone+ says UNKNOWN, never CLEAR. Alexa asks someone to look; the carrier gets NO_ADVISORY and flies exactly as it would today.',
+    blurb: 'The frame can\'t be read. DropZone says UNKNOWN, never CLEAR. Alexa asks someone to look; the carrier gets NO_ADVISORY and flies exactly as it would today.',
     etaSec: 240,
     durationSec: 320,
     hazards: [],
@@ -48,7 +48,37 @@ export const SCENARIOS = [
     events: [],
     drop: { at: [0.715, 0.60] },
   },
+  {
+    id: 'dusk',
+    title: 'Dusk: too dark to see, sprinklers due mid-drop',
+    blurb: 'Evening delivery, 5 min out. The camera can\'t read the zone in this light, and the sprinklers are scheduled to run at T−20 s. Alexa asks; the owner says yes; the yard lights come on and the next sprinkler run is paused. All three devices are simulated.',
+    etaSec: 300,
+    durationSec: 400,
+    hazards: [],
+    lowLight: true,                      // simulated: frames are unreadable until the yard lights are on
+    household: { hasPetDoor: true, hasYardLights: true, hasSprinkler: true, lowLight: true },
+    sprinklerAtSec: 280,                 // simulated irrigation schedule
+    actors: [],
+    events: [
+      { t: 15, type: 'answer', prompt: 'lights-on', yes: true, auto: true },
+      { t: 30, type: 'answer', prompt: 'sprinkler-pause', yes: true, auto: true },
+    ],
+    drop: { at: [0.53, 0.70] },
+  },
 ];
+
+/** Household for a scenario run that started at `base` (ms). Simulated devices only. */
+export function scenarioHousehold(scn, base) {
+  const h = { hasPetDoor: true, ...(scn.household || {}) };
+  if (Number.isFinite(scn.sprinklerAtSec)) h.sprinklerRunsAt = base + scn.sprinklerAtSec * 1000;
+  return h;
+}
+
+/** What the (simulated) camera can read right now. At dusk it needs the yard lights on. */
+export function replayMedia(scn, state) {
+  if (scn.lowLight && state?.lights?.mode !== 'on') return { readable: false, reason: 'Too dark to read the drop zone (simulated dusk)' };
+  return scn.media || { readable: true };
+}
 
 function lerp(a, b, t) { return a + (b - a) * t; }
 

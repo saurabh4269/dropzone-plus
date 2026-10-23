@@ -1,6 +1,6 @@
 # Drone-side vision vs a fixed home camera
 
-**Drone-side vision (OpenLander, MDPI Drones 8(1):21) vs fixed home camera (DropZone+): complementary, not rivals.**
+**Drone-side vision (OpenLander, MDPI Drones 8(1):21) vs fixed home camera (DropZone): complementary, not rivals.**
 
 The [3D simulation](https://saurabh4269.github.io/dropzone-plus/sim/) (`public/sim/`) puts both viewpoints in the same simulated backyard so the trade-offs are visible. Everything in it is simulated: scripted actors, a "ground-truth detector" that projects 3D bounding boxes into each camera (no occlusion, no misses), and a simulated carrier. The zone verdict (`evaluateZone`), the carrier advisory (`buildAdvisory`) and the proof-of-drop (`findNewObject` on rendered 160×90 Ring frames) are the real modules from `public/core/`.
 
@@ -10,11 +10,11 @@ The [3D simulation](https://saurabh4269.github.io/dropzone-plus/sim/) (`public/s
 
 **MDPI Drones 2024, 8(1), 21**: Alsawy, Moss, Hicks, McKeever, *"An Image Processing Approach for Real-Time Safety Assessment of Autonomous Drone Delivery"* (TU Dublin with Manna Drone Delivery), [doi:10.3390/drones8010021](https://doi.org/10.3390/drones8010021). From the abstract: an image-processing-based classification approach for the dropping stage at a predefined destination, using live streaming from a single onboard camera plus GPS. It has two stages, image segmentation then classification, and takes camera parameters, light parameters, dropping-zone dimensions and the drone's height into account. The authors report a fast method with reliable accuracy based on low-order calculations. (The mdpi.com page returned HTTP 403 to our fetch. The abstract was read from the Crossref record for the DOI, so we describe only what the abstract says, not the paper's detailed results.)
 
-**DropZone+** (this repo). A fixed Ring camera that has watched the same patch of lawn for months checks the owner-drawn drop zone *before* the drone arrives. It returns CLEAR / NOT_CLEAR / UNKNOWN and gives the carrier only a veto-only advisory: HOLD or NO_ADVISORY, never "safe".
+**DropZone** (this repo). A fixed Ring camera that has watched the same patch of lawn for months checks the owner-drawn drop zone *before* the drone arrives. It returns CLEAR / NOT_CLEAR / UNKNOWN and gives the carrier only a veto-only advisory: HOLD or NO_ADVISORY, never "safe".
 
 ## Comparison
 
-| | Drone-side vision (OpenLander, MDPI Drones 8(1):21) | Fixed home camera (DropZone+) |
+| | Drone-side vision (OpenLander, MDPI Drones 8(1):21) | Fixed home camera (DropZone) |
 |---|---|---|
 | Viewpoint | Onboard, looking down from the final approach (~13 ft at drop) | Fixed on the house, 2.4 m up, wide lens, always on |
 | When it sees the zone | Only for the last seconds before the drop | Continuously, minutes before the drone arrives |
@@ -30,7 +30,7 @@ The [3D simulation](https://saurabh4269.github.io/dropzone-plus/sim/) (`public/s
 
 ## Our stance
 
-DropZone+ is veto-only. It can only say HOLD or NO_ADVISORY (`authorises_drop: false` is hard-coded). If it's down, slow or unsure, the carrier sees NO_ADVISORY and flies exactly as it does today. The drone's own sensors, including drone-side vision like OpenLander or the MDPI approach, stay authoritative. The two are complementary. The home camera gives early warning and context the drone can't have (time, owner-marked hazards, the household in the loop). The drone camera covers the last seconds and every home without a camera. In the simulation's umbrella scenario, the hold budget runs out and the drone-side check makes the final call (abort). That is the intended division of labour.
+DropZone is veto-only. It can only say HOLD or NO_ADVISORY (`authorises_drop: false` is hard-coded). If it's down, slow or unsure, the carrier sees NO_ADVISORY and flies exactly as it does today. The drone's own sensors, including drone-side vision like OpenLander or the MDPI approach, stay authoritative. The two are complementary. The home camera gives early warning and context the drone can't have (time, owner-marked hazards, the household in the loop). The drone camera covers the last seconds and every home without a camera. In the simulation's umbrella scenario, the hold budget runs out and the drone-side check makes the final call (abort). That is the intended division of labour.
 
 ## OpenLander on the simulated drone view
 

@@ -1,6 +1,6 @@
 {
-  "name": "DropZone+",
-  "short_name": "DropZone+",
+  "name": "DropZone",
+  "short_name": "DropZone",
   "description": "Your Ring camera checks the drone drop zone before the drone arrives.",
   "id": "./",
   "start_url": "./",

@@ -1,4 +1,4 @@
-// DropZone+ 3D simulation page: renders the deterministic model (model.js) with three.js from three cameras,
+// DropZone 3D simulation page: renders the deterministic model (model.js) with three.js from three cameras,
 // feeds the Ring-view detections to the real core logic, and runs the real proof-of-drop on rendered frames.
 import * as THREE from '../vendor/three/three.module.min.js';
 import {

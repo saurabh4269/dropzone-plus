@@ -3,8 +3,13 @@
 
 import { STATUS, freshen, pointInPolygon, footprint, distanceToPolygon } from './zone.js';
 import { buildAdvisory, ADVICE } from './advisory.js';
-import { headsUp, holdNotice, confirmation, deliveryDone } from './alexa.js';
+import { headsUp, holdNotice, confirmation, deliveryDone, deviceOffers } from './alexa.js';
 import { createPetDoor } from './petdoor.js';
+import { createYardLights } from './lights.js';
+import { createSprinkler } from './sprinkler.js';
+
+// Restore window for every device change, even if we never hear "delivered".
+const SAFETY_MS = 15 * 60000;
 
 export const PHASE = Object.freeze({ IDLE: 'idle', INBOUND: 'inbound', HOLDING: 'holding', LANDING: 'landing', DELIVERED: 'delivered', DIVERTED: 'diverted' });
 
@@ -17,12 +22,17 @@ export function createSession({ zone, hazards = [], household = { hasPetDoor: tr
     advisory: null,
     holdsIssued: 0,
     pendingPrompt: null,
+    promptQueue: [],     // later questions wait their turn; Alexa asks one at a time
     receipt: null,
     announcedFor: null,
     timeline: [],
   };
   const petDoor = createPetDoor({ onChange: (e) => log('petdoor', e) });
   s.petDoor = petDoor;
+  const lights = createYardLights({ onChange: (e) => log('lights', e) });
+  s.lights = lights;
+  const sprinkler = createSprinkler({ onChange: (e) => log('sprinkler', e), nextRunAt: household.sprinklerRunsAt ?? null });
+  s.sprinkler = sprinkler;
 
   function log(type, data) {
     const entry = { at: new Date(now()).toISOString(), type, ...data };
@@ -42,8 +52,32 @@ export function createSession({ zone, hazards = [], household = { hasPetDoor: tr
     s.announcedFor = key;
     const msg = headsUp({ verdict: v, etaMin: etaMin(), household: s.household, petDoor: s.household.hasPetDoor && petDoor.mode === 'normal' });
     if (!msg) return;
+    if (msg.prompt && s.pendingPrompt) { // keep the open question; ask this one next
+      const { prompt, ...rest } = msg;
+      log('alexa', { kind: 'speech', ...rest });
+      enqueue(prompt, prompt.question);
+      return;
+    }
     if (msg.prompt) s.pendingPrompt = msg.prompt;
     log('alexa', { kind: 'speech', ...msg });
+  }
+
+  function enqueue(prompt, speech) {
+    if (s.pendingPrompt?.id === prompt.id || s.promptQueue.some((q) => q.prompt.id === prompt.id)) return;
+    if (!s.pendingPrompt) { s.pendingPrompt = prompt; log('alexa', { kind: 'speech', speech, prompt }); }
+    else s.promptQueue.push({ prompt, speech });
+  }
+
+  function askNext() {
+    const q = s.promptQueue.shift();
+    if (q) { s.pendingPrompt = q.prompt; log('alexa', { kind: 'speech', speech: q.speech, prompt: q.prompt }); }
+  }
+
+  // Devices that help the household clear the spot. Each is offered only when it applies.
+  function offerDevices() {
+    const end = (s.delivery?.etaAt || now()) + SAFETY_MS;
+    const msg = deviceOffers({ household: s.household, lightsOff: lights.mode === 'off', sprinklerRunsAt: sprinkler.mode === 'scheduled' ? sprinkler.nextRunAt : null, now: now(), windowEnd: end });
+    for (const m of msg) enqueue(m.prompt, m.speech);
   }
 
   return {
@@ -56,6 +90,7 @@ export function createSession({ zone, hazards = [], household = { hasPetDoor: tr
       s.announcedFor = null;
       log('delivery', { kind: 'started', carrier, ref, eta: new Date(etaAt).toISOString() });
       maybeAnnounce(true);
+      offerDevices();
     },
     observe(verdict) {
       s.verdict = verdict;
@@ -68,18 +103,19 @@ export function createSession({ zone, hazards = [], household = { hasPetDoor: tr
       if (!p || p.id !== promptId) return { ok: false, error: 'NO_SUCH_PROMPT' };
       s.pendingPrompt = null;
       log('owner', { kind: 'answer', prompt: p.id, yes });
-      if (!yes) { log('alexa', { kind: 'speech', speech: 'Okay, I won\'t change anything.' }); return { ok: true }; }
+      if (!yes) { log('alexa', { kind: 'speech', speech: 'Okay, I won\'t change anything.' }); askNext(); return { ok: true }; }
       let res = { ok: false };
-      if (p.action === 'petdoor.in_only') {
-        const until = (s.delivery?.etaAt || now()) + 15 * 60000; // safety restore even if we never hear "delivered"
-        res = petDoor.setInOnly({ ownerConsent: true, until, at: now() });
-      }
+      const until = (s.delivery?.etaAt || now()) + SAFETY_MS; // safety restore even if we never hear "delivered"
+      if (p.action === 'petdoor.in_only') res = petDoor.setInOnly({ ownerConsent: true, until, at: now() });
+      else if (p.action === 'lights.on') res = lights.turnOn({ ownerConsent: true, until, at: now() });
+      else if (p.action === 'sprinkler.pause') res = sprinkler.pause({ ownerConsent: true, until, at: now() });
       log('alexa', { kind: 'speech', speech: confirmation(p.action, res.ok) });
+      askNext();
       return res;
     },
     /** Advance the simulated carrier. The carrier consults the advisory at T-60s and on each hold expiry. */
     tick() {
-      petDoor.tick(now());
+      petDoor.tick(now()); lights.tick(now()); sprinkler.tick(now());
       if (!s.delivery) return;
       const t = now();
       s.advisory = buildAdvisory({ verdict: s.verdict, delivery: s.delivery, now: t, holdsIssued: s.holdsIssued });
@@ -123,6 +159,8 @@ export function createSession({ zone, hazards = [], household = { hasPetDoor: tr
         holds_requested: s.holdsIssued,
       };
       petDoor.restore('drone departed', now());
+      lights.restore('drone departed', now());
+      sprinkler.restore('drone departed', now());
       s.phase = PHASE.DELIVERED;
       log('receipt', { receipt: s.receipt });
       log('alexa', { kind: 'speech', speech: deliveryDone(s.receipt) });

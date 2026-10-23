@@ -45,6 +45,25 @@ export function headsUp({ verdict, etaMin, household = {}, petDoor }) {
   return { speech, card: { title: `Drone in ${mins} min`, body: `Drop zone NOT CLEAR: ${d.what} ${d.where}.` }, prompt };
 }
 
+/**
+ * Device offers at the start of a delivery window (simulated devices, owner consent required).
+ * Lights: only when the household reports low light and has yard lights that are off.
+ * Sprinkler: only when a scheduled run falls inside the drop window.
+ */
+export function deviceOffers({ household = {}, lightsOff = true, sprinklerRunsAt = null, now, windowEnd }) {
+  const out = [];
+  if (household.hasYardLights && household.lowLight && lightsOff) {
+    out.push({ speech: "It's getting dark, and the camera needs light to check the drop zone. Want me to turn on the yard lights until the drone has left?",
+      prompt: { id: 'lights-on', question: 'Turn on the yard lights until the drone leaves?', action: 'lights.on' } });
+  }
+  if (household.hasSprinkler && Number.isFinite(sprinklerRunsAt) && sprinklerRunsAt >= now && sprinklerRunsAt <= windowEnd) {
+    const mins = Math.max(1, Math.round((sprinklerRunsAt - now) / 60000));
+    out.push({ speech: `Your sprinklers are scheduled to run in about ${mins} minute${mins === 1 ? '' : 's'}, during the drop window. Want me to pause them until the drone has left?`,
+      prompt: { id: 'sprinkler-pause', question: 'Pause the sprinklers until the drone leaves?', action: 'sprinkler.pause' } });
+  }
+  return out;
+}
+
 export function holdNotice({ verdict, holdSeconds }) {
   const d = describe(verdict) || { what: 'something', where: 'in the drop zone' };
   return { speech: `The drone is waiting about ${holdSeconds} seconds because there's ${d.what} ${d.where}. It will try again after that.`, card: { title: 'Drone holding', body: `Waiting ${holdSeconds}s: ${d.what} ${d.where}.` } };
@@ -52,6 +71,8 @@ export function holdNotice({ verdict, holdSeconds }) {
 
 export function confirmation(action, ok) {
   if (action === 'petdoor.in_only') return ok ? "Okay. The pet door is now come-in-only. I'll set it back once the drone has gone." : "I couldn't reach the pet door. You may want to call the dog in.";
+  if (action === 'lights.on') return ok ? "Okay. The yard lights are on so the camera can see the drop zone. I'll turn them off once the drone has gone." : "I couldn't reach the yard lights. The camera may not be able to check the zone in this light.";
+  if (action === 'sprinkler.pause') return ok ? "Okay. I've paused the sprinklers for this delivery. The schedule goes back to normal once the drone has gone." : "I couldn't reach the sprinkler controller. The next run may start during the drop.";
   return ok ? 'Done.' : 'That didn\'t work.';
 }
 

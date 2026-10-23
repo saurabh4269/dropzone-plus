@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Exercise every Ring Partner API endpoint DropZone+ uses and print what came back.
+// Exercise every Ring Partner API endpoint DropZone uses and print what came back.
 // Usage: RING_ACCESS_TOKEN=... node scripts/ring-probe.js   (writes snapshot to /tmp/dropzone-probe.jpg)
 import { writeFile } from 'node:fs/promises';
 import { ring, pickDevice, summarizeDevice, callLog } from '../lib/ring.js';

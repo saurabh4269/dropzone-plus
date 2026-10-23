@@ -1,19 +1,19 @@
-# HANDOFF: DropZone+ (for Saurabh)
+# HANDOFF: DropZone (for Saurabh)
 
 Deadline: **Sat 24 Oct 2026, 00:30 IST (Fri 12:00 PT)**. After you submit, pin the judged links to a commit SHA (see the end of this file).
 
 ## What's done (as of the final push; latest SHAs are printed in the final summary)
 **Links.** Website https://saurabh4269.github.io/dropzone-plus/ · **App (PWA)** https://saurabh4269.github.io/dropzone-plus/app/ · Judge demo https://saurabh4269.github.io/dropzone-plus/demo.html · 3D simulation https://saurabh4269.github.io/dropzone-plus/sim/ (if listed in the README) · Video https://vimeo.com/1238833557 · Sandbox https://github.com/saurabh4269/ring-partner-sandbox (v0.2.1)
 
-**DropZone+ (main repo)**
+**DropZone (main repo)**
 - **Homeowner PWA (`/app/`)**, installable (manifest, icons, service worker, offline shell), built for 390 px.
   - **Onboarding:** welcome → Connect Ring (Partner-Initiated OAuth per the docs, Playground token, or a labelled demo home) → camera picker (names and online/offline, per the Ring UX guide) → notifications, Alexa heads-up and pet-door toggles → drag-to-mark drop zone with a name and description.
-  - **Tabs:** Home (next drone, live CLEAR / NOT CLEAR / UNKNOWN, Alexa line, one-tap pet-door yes, HOLD, Check now / Live view), Zones (several zones, one default, hazards, audit and suggested safer spot), Deliveries (proof-of-drop photo and placement), Partners (3 **fictional example partners**, labelled simulated, with learn more, consent, which zone, optional drop instructions, unlink), Settings (connection, toggles, theme, privacy, delete all data).
+  - **Tabs:** Home (next drone, live CLEAR / NOT CLEAR / UNKNOWN, Alexa line, one-tap pet-door yes, HOLD, Check now / Live view), Zones (several zones, one default, hazards, audit and suggested safer spot), Deliveries (proof-of-drop photo and placement), Partners (real operators Amazon Prime Air, Wing, Zipline, Flytrex, Manna, labelled "Preview: no live integration yet, linking is simulated; not affiliated", with Learn more, consent, which zone, optional drop instructions, unlink), Settings (connection, toggles, theme, privacy, delete all data).
 - **Ring account linking per the docs** (`lib/oauth.js`): PKCE S256, `state`, scope `ava.v1:read`, code exchange, `PATCH app-integrations {status: completed}`, and `DELETE` to unlink. It's unit-tested, but it has never run against Ring because hackathon entrants get no partner credentials. The **Playground-token onboarding** (`POST /api/ring/token`, localhost only) is the working path.
 - **Proof of drop by before/after change detection** (`public/core/changes.js`), used in the demo, the PWA and live mode.
 - **Zone audit suggests a safer zone** (`suggestZone`); one click applies it.
 - **Detector vendored.** TF.js and the COCO-SSD model weights are in `public/vendor/` (Apache-2.0, ~19 MB), so there's no CDN dependency at runtime. The CDN is only a fallback.
-- **Tests:** `npm test` has 46 (zone logic, advisory, every replay scenario, change detection, OAuth/PKCE, HMAC, Rekognition mapping and a live AWS test, the 3D sim model, LIVE-mode integration against ring-partner-sandbox). `npm run e2e` checks the website and demo, and `npm run e2e:app` walks the full PWA journey at 390×844. All pass locally and against Pages.
+- **Tests:** `npm test` has 55 (zone logic, advisory, every replay scenario, change detection, OAuth/PKCE, HMAC, Rekognition mapping and a live AWS test, the 3D sim model, LIVE-mode integration against ring-partner-sandbox). `npm run e2e` checks the website and demo, and `npm run e2e:app` walks the full PWA journey at 390×844. All pass locally and against Pages.
 - **README:** hero image, labelled AI concept GIF, link table, an exact map of where the Ring API is called (file, function, trigger), a mermaid architecture diagram, real vs simulated, the PWA journey, and references (Ring docs, UX guide, ring-api-helloworld).
 - **FRICTION.md:** 14 entries, every one with task, steps, expected, actual, severity, workaround and suggestion. New ones: the OAuth scope mismatch in the docs (`ava` vs `ava.v1:read`), two response shapes for app-integrations, and CORS plus no sandbox OAuth client.
 - **CI** is ready in `ci/ci.yml`, but **you must enable it** (see below).
@@ -58,12 +58,12 @@ Script (about 2:45):
 | Time | Show | Say |
 |---|---|---|
 | 0:00–0:20 | News headlines about packages in pools (as links on screen) and the Amazon FAQ line "keep pets 10 ft away" | "Drone delivery is here. Every drop needs a clear 10-by-10 patch of yard, and today nobody checks it before the drone shows up. Dogs, kids, pools." |
-| 0:20–0:35 | The DropZone+ page and the 4-step strip | "DropZone+ makes your Ring camera the eye on the drop zone. Ring sees it, Alexa tells the family, your devices help, and the drone carrier gets one bit: hold, or nothing." |
+| 0:20–0:35 | The DropZone page and the 4-step strip | "DropZone makes your Ring camera the eye on the drop zone. Ring sees it, Alexa tells the family, your devices help, and the drone carrier gets one bit: hold, or nothing." |
 | 0:35–1:05 | **LIVE** segment: Discover, snapshot, draw zone, WHEP live frame analysed, Ring API calls panel | "This is the real Ring Partner API on the Ring Developer Playground: device discovery, history, a snapshot and WHEP live view. Frames run through on-device object detection against the zone I drew." |
 | 1:05–1:50 | Replay scenario 1 at 10× with **Speak** on. Click **Yes** (or say "yes") at the pet-door prompt | "Replay mode, clearly labelled as simulated. The dog is in the zone. Alexa asks, I say yes, and the pet door goes come-in-only. At T-minus-60 a kid runs in, so the carrier gets a HOLD and waits a minute. The zone clears, the box drops, and Ring gives a proof-of-drop receipt." |
-| 1:50–2:10 | Scenario 3 (pool): the audit warning, then the receipt "Landed next to the pool" | "Set-up includes a zone audit. The pool is inside downwash range, and DropZone+ tells you before a box goes swimming." |
+| 1:50–2:10 | Scenario 3 (pool): the audit warning, then the receipt "Landed next to the pool" | "Set-up includes a zone audit. The pool is inside downwash range, and DropZone tells you before a box goes swimming." |
 | 2:10–2:30 | Scenario 2 (UNKNOWN) and the `/api/v1/advisory` JSON | "Safety by design. It's veto-only: the carrier can only ever get HOLD or nothing, never 'safe to land'. If the camera can't see, it says UNKNOWN, and everything falls back to today's behaviour. Labels only, no identities, no video leaves home." |
-| 2:30–2:45 | The terminal running `npm run sim` showing an HMAC-verified webhook, and the MCP tool call | "Signed Ring webhooks, an MCP surface for an Alexa+ add-on, open source. DropZone+." |
+| 2:30–2:45 | The terminal running `npm run sim` showing an HMAC-verified webhook, and the MCP tool call | "Signed Ring webhooks, an MCP surface for an Alexa+ add-on, open source. DropZone." |
 
 Say "simulated" whenever the carrier, Alexa or the pet door is on screen. Don't show the Alexa+ logo (not permitted, forum 45450).
 
@@ -77,7 +77,7 @@ DZ_BEDROCK=1 npm start
 The camera footer should read "detector: Amazon Bedrock …". A project can win only one mini-challenge, so **Open Source is the safer bet**: its repo is finished and tested.
 
 ### 4. Devpost form
-- **Name:** DropZone+
+- **Name:** DropZone
 - **Tagline:** Your Ring camera checks the drone drop zone before the drone arrives.
 - **Track:** Ring. Mini-challenge: **Open Source** (with the separate repo below). AWS Builder is only worth entering if you get Bedrock running (see Risks).
 - **Built with:** Ring Partner API, Ring Developer Playground, WebRTC/WHEP, Node.js, TensorFlow.js (COCO-SSD), Web Speech API, Model Context Protocol, GitHub Pages. Add Amazon Bedrock only if you tested it.
@@ -117,13 +117,16 @@ The camera footer should read "detector: Amazon Bedrock …". A project can win 
   - 46 unit and integration tests plus two headless-Chrome end-to-end suites.
   - Ring UX design guide followed: device names, offline state, empty states, a skippable tutorial, in-app data deletion.
 - **Built with (add):** Progressive Web App (Web App Manifest, Service Worker), OAuth 2.0 PKCE, WebRTC/WHEP, TensorFlow.js (vendored), Canvas change detection, three.js (3D simulation).
-- **Testing instructions:** "Open https://saurabh4269.github.io/dropzone-plus/app/ on a phone or narrow window, then choose Try a demo home (simulated) → Backyard Cam → Continue → drag the zone → Save → Link a delivery partner → SkyHop Air (example) → Link → Home → Simulate a drone delivery → tap Yes. For scripted scenarios use /demo.html."
+- **Testing instructions:** "Open https://saurabh4269.github.io/dropzone-plus/app/ on a phone or narrow window, then choose Try a demo home (simulated) → Backyard Cam → Continue → drag the zone → Save → Link a delivery partner → Amazon Prime Air (preview, simulated) → Link → Home → Simulate a drone delivery → tap Yes. For scripted scenarios use /demo.html."
 - **Friction log:** now 14 complete entries.
 - **Open Source entry:** ring-partner-sandbox v0.2.1 (record/replay fixtures, composite GitHub Action, examples, API coverage table, 33 tests).
 - **Video:** consider a 20 s PWA segment (onboarding → mark zone → simulated delivery) before the replay demo.
 
 ## Playground run (real Ring Developer Playground)
-- **Status at 21:55 IST:** **not yet run against the real Playground.** No token was available on this machine (`/workspace/secrets/ring-playground.env` did not exist). Run `npm run playground` with your token and paste the output here.
+- **Real Playground run, 23 Oct 2026 23:31 IST (`npm run playground`): 7 PASS · 1 FAIL · 1 INFO.**
+  - PASS: users/me; devices (1 "Playground Device"); status; capabilities; event history (1 event after pressing Package in Playground step 3); PWA Check now (verdict UNKNOWN); carrier advisory.
+  - INFO: snapshot download returns 403, so the verdict is UNKNOWN (correct behaviour).
+  - FAIL: live view. WHEP POST returns 201 with an SDP answer, but no video frames arrive. The Playground's own Live Stream modal also stayed black on this machine.
 - **Dry run against ring-partner-sandbox** (`RING_API_BASE=http://127.0.0.1:8686 RING_ACCESS_TOKEN=sandbox-token npm run playground`): **8 PASS · 0 FAIL · 1 SKIP.**
   - Passed: users/me, devices, status, capabilities, history, snapshot via 303, the PWA snapshot verdict, and the advisory.
   - Skipped: WHEP, because the mock can't stream video. The real Playground is the only way to verify WHEP plus live-frame detection.
@@ -148,7 +151,7 @@ The camera footer should read "detector: Amazon Bedrock …". A project can win 
 
 ## Open source (separate repo)
 - **https://github.com/saurabh4269/ring-partner-sandbox** (MIT, public, 23 tests). It's a local mock of the Ring Partner API with JSON:API shapes, the Bearer/`User-Agent`/`Hardware_Id` 406 rules, the 303 snapshot flow, and history with an `event_types` filter. It also includes a signed v1.1 webhook simulator covering all 10 event types, timed scenarios that keep history and webhooks consistent, and a verifier library (JS and Python) with middleware.
-- It addresses exactly what the Playground lacks (a 30-minute token, no webhooks). DropZone+'s live mode was tested end to end against it: discovery, status, capabilities, history, snapshot, then COCO-SSD scoring and a signed webhook that triggers a re-check.
+- It addresses exactly what the Playground lacks (a 30-minute token, no webhooks). DropZone's live mode was tested end to end against it: discovery, status, capabilities, history, snapshot, then COCO-SSD scoring and a signed webhook that triggers a re-check.
 - Enter it in the **Open Source mini-challenge** with a short blurb. "Built during the hackathon window; separate from the main entry; unofficial, shapes from the public docs."
 - Before submitting, try it yourself: `node bin/ring-sandbox.js serve`, then `npm test`.
 

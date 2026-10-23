@@ -2,7 +2,7 @@
 // Guards the demo storyline: if a rule change alters what judges see, these fail.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SCENARIOS, DEFAULT_ZONE, scriptedDetections } from '../public/scenarios.js';
+import { SCENARIOS, DEFAULT_ZONE, scriptedDetections, scenarioHousehold, replayMedia } from '../public/scenarios.js';
 import { evaluateZone, auditZone, STATUS } from '../public/core/zone.js';
 import { createSession, PHASE } from '../public/core/engine.js';
 
@@ -12,8 +12,8 @@ function run(scn, { answer = true } = {}) {
   const now = () => base + t * 1000;
   const zone = scn.zone || DEFAULT_ZONE;
   const log = [];
-  const s = createSession({ zone, hazards: scn.hazards, now, emit: (type, e) => log.push({ t, type, ...e }) });
-  const look = () => s.observe(evaluateZone({ detections: scriptedDetections(scn, t), zone, observedAt: now(), now: now(), media: scn.media, source: 'replay' }));
+  const s = createSession({ zone, hazards: scn.hazards, household: scenarioHousehold(scn, base), now, emit: (type, e) => log.push({ t, type, ...e }) });
+  const look = () => s.observe(evaluateZone({ detections: scriptedDetections(scn, t), zone, observedAt: now(), now: now(), media: replayMedia(scn, s.state), source: 'replay' }));
   look();
   s.startDelivery({ etaAt: now() + scn.etaSec * 1000 });
   const done = new Set();
@@ -68,4 +68,30 @@ test('pool: audit warns before delivery; no hold; receipt says the box is by the
   assert.equal(s.state.holdsIssued, 0);
   assert.equal(s.state.receipt.placement, 'hazard');
   assert.equal(s.state.receipt.hazard, 'pool');
+});
+
+test('dusk: lights prompt -> yes -> camera can read the zone -> sprinkler paused -> delivered in zone -> both restored', () => {
+  const { s, log } = run(byId.dusk);
+  const kinds = log.map((e) => `${e.type}:${e.kind || e.mode || ''}`);
+  const first = log.find((e) => e.type === 'verdict');
+  assert.equal(first.verdict.status, STATUS.UNKNOWN, 'too dark before the lights are on');
+  assert.ok(log.some((e) => e.type === 'alexa' && /yard lights/.test(e.speech || '') && e.prompt?.id === 'lights-on'));
+  assert.ok(kinds.includes('lights:on'));
+  assert.ok(log.some((e) => e.type === 'alexa' && e.prompt?.id === 'sprinkler-pause'), 'sprinkler asked after lights were answered');
+  assert.ok(kinds.includes('sprinkler:paused'));
+  assert.ok(!kinds.includes('sprinkler:running'), 'paused run never starts');
+  assert.ok(log.some((e) => e.type === 'verdict' && e.verdict.status === STATUS.CLEAR), 'lights make the zone readable');
+  assert.equal(s.state.receipt.placement, 'in_zone');
+  assert.equal(s.state.lights.mode, 'off');
+  assert.equal(s.state.sprinkler.mode, 'scheduled');
+});
+
+test('dusk without owner consent: lights stay off, zone stays UNKNOWN, sprinkler runs on schedule', () => {
+  const { s, log } = run(byId.dusk, { answer: false });
+  assert.ok(!log.some((e) => e.type === 'lights'));
+  assert.ok(log.filter((e) => e.type === 'verdict').every((e) => e.verdict.status === STATUS.UNKNOWN));
+  assert.ok(log.some((e) => e.type === 'sprinkler' && e.mode === 'running'));
+  assert.equal(s.state.lights.mode, 'off');
+  const fa = log.find((e) => e.type === 'carrier' && e.kind === 'final-approach');
+  assert.equal(fa.advisory.advice, 'NO_ADVISORY');
 });

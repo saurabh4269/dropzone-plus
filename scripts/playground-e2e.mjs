@@ -40,7 +40,7 @@ if (device) {
   try {
     const snap = await ring.snapshot(device.id);
     if (snap.ok) { writeFileSync('/tmp/dropzone-playground-snapshot.jpg', snap.bytes); log('PASS', 'POST media/image/download → 303 → GET', `${snap.bytes.length} bytes, origin ${snap.origin || 'n/a'}, frame age ${snap.mediaTimestamp ? Math.round((Date.now() - snap.mediaTimestamp) / 1000) + 's' : 'n/a'}`); }
-    else log('INFO', 'POST media/image/download', `not available (${snap.status}): ${String(snap.reason).slice(0, 80)}. DropZone+ reports UNKNOWN for this; live view still works`);
+    else log('INFO', 'POST media/image/download', `not available (${snap.status}): ${String(snap.reason).slice(0, 80)}. DropZone reports UNKNOWN for this; live view still works`);
   } catch (e) { log('INFO', 'POST media/image/download', `${e.status || ''} ${e.message.slice(0, 80)}`); }
 }
 
@@ -69,7 +69,7 @@ if (!device || !chromeBin) {
   await cdp('Page.navigate', { url: `${base}/app/` }); await sleep(1200);
   const seed = { onboarded: true, connection: { mode: 'live', method: 'playground-token', at: Date.now() }, camera: { id: device.id, name: device.name },
     zones: [{ id: 'z1', name: 'Front path', desc: 'In front of the door', polygon: [[0.35, 0.55], [0.65, 0.55], [0.7, 0.9], [0.3, 0.9]], hazards: [], cameraId: device.id, isDefault: true }],
-    partners: { skyhop: { linked: true, zoneId: 'z1' } }, settings: { notifications: false, alexa: true, petDoor: true, theme: 'dark', speak: false }, deliveries: [] };
+    partners: { primeair: { linked: true, zoneId: 'z1' } }, settings: { notifications: false, alexa: true, petDoor: true, theme: 'dark', speak: false }, deliveries: [] };
   await ev(`localStorage.setItem('dropzone.app.v1', ${JSON.stringify(JSON.stringify(seed))}); location.hash='#/home'; location.reload(); true`);
   await sleep(6000); // first snapshot + COCO-SSD load
   const hero = await ev(`document.querySelector('#hero')?.innerText || ''`);

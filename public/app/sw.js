@@ -1,9 +1,9 @@
-// DropZone+ service worker: offline app shell. Ring/API calls always go to the network.
-const VERSION = 'dz-app-v4';
+// DropZone service worker: offline app shell. Ring/API calls always go to the network.
+const VERSION = 'dz-app-v5';
 const SHELL = [
   './', './index.html', './app.css', './main.js', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
-  '../core/zone.js', '../core/engine.js', '../core/advisory.js', '../core/alexa.js', '../core/petdoor.js', '../core/changes.js',
+  '../core/zone.js', '../core/engine.js', '../core/advisory.js', '../core/alexa.js', '../core/petdoor.js', '../core/lights.js', '../core/sprinkler.js', '../core/changes.js',
   '../scene.js', '../detector.js',
 ];
 

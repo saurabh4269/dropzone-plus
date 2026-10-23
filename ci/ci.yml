@@ -1,4 +1,4 @@
-# GitHub Actions CI for DropZone+. Install with scripts/enable-ci.sh
+# GitHub Actions CI for DropZone. Install with scripts/enable-ci.sh
 # (the maintainer's token needs the `workflow` scope: gh auth refresh -h github.com -s workflow).
 name: ci
 on:

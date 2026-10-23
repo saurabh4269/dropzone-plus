@@ -60,7 +60,7 @@ await check('onboarding done', async () => /You’re set/.test(await text()));
 await shot('done');
 await click('#partners'); await sleep(500);
 await shot('partners');
-await click('[data-p="skyhop"]'); await sleep(400);
+await click('[data-p="primeair"]'); await sleep(400);
 await shot('partner-sheet');
 await click('#save'); await sleep(500);
 await check('partner linked', async () => /Linked/.test(await text()));

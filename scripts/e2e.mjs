@@ -40,6 +40,8 @@ const checks = [
   { name: 'saturday end: delivered in zone, door restored', q: 'scenario=saturday&seek=570', expect: { receiptBox: /inside the drop zone[\s\S]*change detection/, doorText: /normal/ } },
   { name: 'unknown: never CLEAR, no advisory', q: 'scenario=unknown&seek=200', expect: { statusBig: /UNKNOWN/, adviceText: /NO_ADVISORY/ } },
   { name: 'pool: audit warns, receipt by the pool', q: 'scenario=pool&seek=240', expect: { audit: /Pool is ~\d+ ft/, receiptBox: /next to the pool/ } },
+  { name: 'dusk @T-2min: lights on, sprinkler paused, zone readable', q: 'scenario=dusk&seek=180', expect: { statusBig: /CLEAR/, lightsText: /^on$/, sprinklerText: /paused/ } },
+  { name: 'dusk end: delivered in zone, lights off, schedule restored', q: 'scenario=dusk&seek=390', expect: { receiptBox: /inside the drop zone/, lightsText: /off/, sprinklerText: /scheduled/ } },
   { name: 'pool + apply suggested zone: box lands in the new zone', q: 'scenario=pool', before: "document.querySelector('.suggest button').click(); window.dropzone.seek(240);", expect: { audit: /^(?![\s\S]*Suggested)[\s\S]*Pool is ~\d+ ft away/, receiptBox: /inside the drop zone/ } },
 ];
 let failed = 0;

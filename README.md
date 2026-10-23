@@ -1,9 +1,9 @@
-# DropZone+
+# DropZone
 
 **Your Ring camera checks the drone drop zone before the drone arrives.**
-Ring sees the zone, Alexa tells the household (simulated Alexa+ add-on), a smart pet door can fix the problem with the owner's yes (simulated), and the drone carrier gets a HOLD signal. The carrier never receives video and never receives a "safe to land".
+Ring sees the zone and Alexa tells you what is in the way (simulated Alexa+ add-on). With your yes, your devices help clear the spot: a smart pet door lets the dog in but not back out, yard lights come on at dusk so the camera can read the zone, and a sprinkler run is paused for the drop window (all simulated). The camera re-checks, and the drone carrier gets a HOLD signal before landing when the spot is not clear. The carrier never receives video.
 
-![DropZone+: a Ring camera watching a backyard drop zone as a delivery drone approaches](docs/hero-3d.jpg)
+![DropZone: a Ring camera watching a backyard drop zone as a delivery drone approaches](docs/hero-3d.jpg)
 
 | | |
 |---|---|
@@ -23,31 +23,39 @@ Built for the Amazon Developer Hackathon 2026, **Ring track** ("Ring meets Alexa
 
 *Concept animation (AI-generated illustration, not product footage). The product screens below are real.*
 
-![DropZone+ holding a drone because a kid ran into the drop zone (replay, simulated yard)](docs/screenshot-hold.png)
+![DropZone holding a drone because a kid ran into the drop zone (replay, simulated yard)](docs/screenshot-hold.png)
 
 ---
 
 ## Why
 
-Drone delivery is moving from pilots to everyday use. Amazon Prime Air is expanding across the US, and Wing with Walmart plans 270+ locations. Each delivery needs a clear patch of yard roughly 10×10 ft, and nobody checks that patch before the drone shows up:
+Drone delivery is moving from pilots to everyday use:
+
+- Amazon's goal for Prime Air is 500 million packages a year by the end of the decade ([Amazon](https://www.aboutamazon.com/news/transportation/amazon-drone-prime-air-expanded-delivery-faa-approval)), with nearly 500 US cities and towns planned by the end of 2026 ([Amazon](https://www.aboutamazon.com/news/transportation/amazon-prime-air-drone-delivery-expansion)).
+- Zipline passed 2 million deliveries in January 2026 ([Zipline](https://www.zipline.com/newsroom/zipline-surpasses-2-million-deliveries-raises-more-than-600m-to-power-next-phase-of-growth-and-expands-operations-to-houston-and-phoenix)) and completes one every 20 to 30 seconds ([CNBC](https://www.cnbc.com/2026/07/14/zipline-drone-delivery-tesla-uber-waymo-executives.html)).
+- Walmart passed 1 million drone deliveries in May 2026 ([Walmart](https://corporate.walmart.com/news/2026/05/29/walmart-celebrates-1-million-drone-deliveries-marking-a-major-milestone-in-customer-convenience)); Wing and Walmart plan 270+ locations reaching 40M+ Americans ([Wing](https://wing.com/news/wing-walmart-expand-drone-delivery-coast-to-coast)).
+- The FAA's BVLOS rule (Part 108) is under review and not yet final ([Drone Authority](https://droneauthority.org/news/part-108-final-rule-oira-review)).
+
+Each delivery needs a clear patch of yard, and nobody checks that patch before the drone shows up:
 
 - Amazon asks customers to keep "people, pets, vehicles, and objects taller than 5 feet … at least 10 feet away from the selected delivery point" ([Amazon drone FAQ](https://www.amazon.com/gp/help/customer/display.html?nodeId=T3jxhuvPfQ629BOIL4)).
 - If anyone runs through the zone, the drone aborts and the item goes by ground instead ([CT Insider](https://www.ctinsider.com/business/article/amazon-drone-delivery-north-haven-ct-faa-22264288.php)). A Phoenix customer's advice to others: *"If your dogs are in the backyard, bring them in"* ([Business Insider](https://www.businessinsider.com/amazon-drone-deliveries-fun-convenient-phoenix-2026-8)).
 - Packages have ended up in pools and ponds ([The Verge](https://www.theverge.com/tech/982808/amazon-prime-air-drones-packages-pools-ponds), [AZFamily](https://www.azfamily.com/2025/08/01/caught-camera-amazon-drone-mishap-sends-package-plunging-into-avondale-pool/)).
+- USPS recorded 5,246 dog attacks on its carriers in 2025 ([USPS](https://uspsblog.com/dont-turn-your-back-on-dog-bite-prevention/)), and an estimated 104.3M packages were stolen in a year, about 250,000 a day ([SafeWise](https://www.safewise.com/research/porch-pirate-package-theft/)). Where a package lands matters.
 - Drop points are chosen remotely from maps, and the drone sees the spot for a few seconds from about 13 ft up ([Prime Air technology](https://www.primeair.amazon/technology)).
 
-A Ring camera has watched that same patch of ground for months. It knows the dog is out right now, that a patio umbrella appeared yesterday, and where the pool is. DropZone+ uses that knowledge **before** the drone arrives, at the point where the household can still do something about it.
+A Ring camera has watched that same patch of ground for months. It knows the dog is out right now, that a patio umbrella appeared yesterday, and where the pool is. DropZone uses that knowledge **before** the drone arrives, at the point where the household can still do something about it.
 
 ## What it does
 
 | Moment | What happens |
 |---|---|
 | **Set-up (once)** | Draw your drop zone on a Ring frame. Mark the pool, pond or hard patio edge. The **zone audit** warns when a hazard is within downwash range ("Pool is ~4 ft from the drop point; move the zone"). |
-| **Drone inbound (T−8 min → T)** | DropZone+ checks the zone on Ring frames and returns **CLEAR / NOT_CLEAR / UNKNOWN**. Each verdict carries `observed_at` and expires after 90 s. **Alexa (simulated Alexa+ add-on)** tells the household: *"Your drone delivery is about 8 minutes away, and there's a dog in the drop zone. Want me to set the pet door to come-in-only until the drone has left?"* Only after the owner says **yes** does the **smart pet door (simulated)** change mode, and it restores itself afterwards. |
+| **Drone inbound (T−8 min → T)** | DropZone checks the zone on Ring frames and returns **CLEAR / NOT_CLEAR / UNKNOWN**. Each verdict carries `observed_at` and expires after 90 s. **Alexa (simulated Alexa+ add-on)** tells the household: *"Your drone delivery is about 8 minutes away, and there's a dog in the drop zone. Want me to set the pet door to come-in-only until the drone has left?"* Only after the owner says **yes** does the **smart pet door (simulated)** change mode, and it restores itself afterwards. |
 | **T−60 s** | The **carrier (simulated, operator-agnostic)** checks the advisory. It gets back either **HOLD** (with reason codes such as `PERSON_IN_ZONE`) or **NO_ADVISORY**. Holds are capped at 3, so a homeowner can't block a delivery forever. |
 | **After the drop** | A Ring frame becomes a **proof-of-drop receipt**: inside the zone, outside the zone, next to the pool, or "not confirmed". Alexa says where the box ended up. |
 
-Three replay scenarios show the whole flow: **dog in the zone, then a kid at T−1 min** (consent, pet door, HOLD, drop), **camera can't see** (UNKNOWN is never shown as CLEAR), and **pool next to the drop point** (audit warning, then a receipt showing the box by the pool).
+Four replay scenarios show the whole flow: **dog in the zone, then a kid at T−1 min** (consent, pet door, HOLD, drop), **camera can't see** (UNKNOWN is never shown as CLEAR), **pool next to the drop point** (audit warning, then a receipt showing the box by the pool), and **dusk** (yard lights on so the zone is readable, sprinkler run paused, then restored after the drop).
 
 ## The app (PWA)
 
@@ -55,7 +63,7 @@ The homeowner app lives at [`/app/`](https://saurabh4269.github.io/dropzone-plus
 
 | Step | What the user does | Grounded in |
 |---|---|---|
-| **Welcome** | Three-line value pitch. "What is DropZone+?" links to the website. | Ring UX design guide: skippable first-visit tutorial, plain language |
+| **Welcome** | Three-line value pitch. "What is DropZone?" links to the website. | Ring UX design guide: skippable first-visit tutorial, plain language |
 | **Connect Ring** | **Link Ring account** (Partner-Initiated OAuth 2.0), or **Ring Developer Playground token**, or **Try a demo home** (simulated). Linking is explained *before* any redirect, and a confirmation screen follows. | Ring docs: Partner-Initiated OAuth 2.0 (PKCE S256, `state`, scope `ava.v1:read`, token exchange, `PATCH /v1/accounts/me/app-integrations {status: completed}`), [`lib/oauth.js`](lib/oauth.js). Ring calls are server-to-server, because the docs say browsers are blocked by CORS. |
 | **Pick a camera** | Cameras are listed by their user-assigned name with an online/offline dot. Offline cameras are shown dimmed with an explanation. The empty state points to the Ring app. | UX guide: "Displaying connected Ring devices" (never show raw IDs, don't hide offline devices) |
 | **Permissions** | Phone notifications, the Alexa heads-up (simulated Alexa+ add-on) and the smart pet door (simulated). | |
@@ -71,7 +79,7 @@ Data stays on the device (`localStorage`). On static hosting (GitHub Pages) ther
 
 This design follows the Ring Program Requirements.
 
-- **Veto-only (Program Requirements 2.8).** The carrier endpoint can only return `HOLD` or `NO_ADVISORY`, and `authorises_drop` is always `false`. CLEAR and UNKNOWN both map to `NO_ADVISORY`, so if DropZone+ is down, slow or unsure, the carrier does exactly what it does today. The aircraft's own detect-and-avoid always stays authoritative. See [`public/core/advisory.js`](public/core/advisory.js) and the tests in [`test/core.test.js`](test/core.test.js).
+- **Veto-only (Program Requirements 2.8).** The carrier endpoint can only return `HOLD` or `NO_ADVISORY`, and `authorises_drop` is always `false`. CLEAR and UNKNOWN both map to `NO_ADVISORY`, so if DropZone is down, slow or unsure, the carrier does exactly what it does today. The aircraft's own detect-and-avoid always stays authoritative. See [`public/core/advisory.js`](public/core/advisory.js) and the tests in [`test/core.test.js`](test/core.test.js).
 - **UNKNOWN is a first-class answer.** If the frame is unreadable (offline, end-to-end encrypted, Ring returns an error), too old (>120 s), or the zone isn't defined, the result is UNKNOWN, never CLEAR. Verdicts expire to UNKNOWN after 90 s.
 - **It watches your own yard, not the carrier (2.4).** It's carrier-agnostic and doesn't monitor any Amazon service's availability or performance.
 - **Labels only, no identity.** The output says "person", "dog" or "vehicle". There's no face matching, no tracking across locations and no plates. The carrier gets only reason codes, never images.
@@ -111,13 +119,16 @@ The Playground can't send webhooks, so [`scripts/simulate-events.js`](scripts/si
 | Ring account linking (Partner-Initiated OAuth 2.0) | **Real code per the docs, never run against Ring**: needs partner credentials we don't have. Unit-tested with a fake token endpoint |
 | PWA: onboarding, saved drop zones, history, settings, offline shell | **Real** (data in this browser's `localStorage`) |
 | PWA "demo home" camera (Backyard Cam, Front Door offline) | **Simulated**, labelled "Demo home · simulated" on every screen |
-| Delivery partners (SkyHop Air, ParcelWing, Neighborly Drone Co-op) | **Fictional example partners, simulated**; no real company is integrated or depicted |
+| Delivery partners (Amazon Prime Air, Wing, Zipline, Flytrex, Manna) | **Preview: no live integration yet, linking is simulated; not affiliated.** Real operators with a short factual note and a Learn more link |
 | Hero image and concept GIF at the top of this README | AI-generated illustrations, not product footage |
 | Ring Partner API calls (discovery, history, snapshot, WHEP) | **Real** in LIVE mode (needs a Playground token) |
 | Ring webhooks | Real HMAC verification; **events simulated** (the Playground can't send webhooks) |
 | Replay yard, actors and their "detections" | **Simulated**: a drawn scene with **scripted** boxes, labelled "SIMULATED FEED · REPLAY" and "(scripted)" on screen |
 | Alexa | **Simulated Alexa+ add-on**: utterances and consent prompts, spoken with browser TTS. Also exposed as an **MCP server** ([`mcp/dropzone-mcp.js`](mcp/dropzone-mcp.js)), the interface Alexa+ add-ons use. There is no public Alexa+ access for this hackathon |
 | Smart pet door | **Simulated** adapter (modelled on Alexa-compatible doors such as Wayzn/Pawport) |
+| Yard lights at dusk (`public/core/lights.js`) | **Simulated**: turn on only after the owner's yes, restored after the drop or 15 min |
+| Sprinkler pause (`public/core/sprinkler.js`) | **Simulated**: the next run in the drop window is skipped only after the owner's yes, schedule restored afterwards |
+| Real Ring Developer Playground run (`npm run playground`, 23 Oct 2026 23:31 IST) | **7 PASS · 1 FAIL · 1 INFO.** PASS: users/me, devices (1 "Playground Device"), status, capabilities, event history (1 event after pressing Package), PWA Check now (verdict UNKNOWN), carrier advisory. INFO: snapshot download 403, so UNKNOWN. FAIL: live view, WHEP POST 201 with an SDP answer but no video frames (the Playground's own Live Stream view also stayed black) |
 | Amazon Rekognition DetectLabels on Ring frames | **Real, verified on 23 Oct 2026**, opt-in with `DZ_AWS=1` ([`lib/rekognition.js`](lib/rekognition.js)) |
 | Amazon Bedrock (Nova) frame description | **Optional, not working yet**: the account returns `Operation not allowed` ([`lib/bedrock.js`](lib/bedrock.js)) |
 
@@ -175,7 +186,7 @@ A three.js backyard (vendored in `public/vendor/three/`, MIT): lawn, fence, a ho
 
 After the drop, the **real** `findNewObject` runs on rendered 160×90 Ring frames and produces the receipt (in zone, or next to the pool). Scenarios: dog + kid, pool + downwash gust, and a stale survey (patio umbrella). The simulated parts are the actors, the "detector" (3D boxes projected into each camera, no occlusion or misses) and the carrier. `node scripts/render-sim.mjs` checks all three outcomes in headless Chrome and rebuilds the GIF. We also ran OpenLander's published ONNX model on the rendered drone views (see the comparison).
 
-| | Drone-side vision (OpenLander, MDPI Drones 8(1):21) | Fixed home camera (DropZone+) |
+| | Drone-side vision (OpenLander, MDPI Drones 8(1):21) | Fixed home camera (DropZone) |
 |---|---|---|
 | Sees the zone | Final seconds, from ~13 ft | Continuously, minutes ahead |
 | Dog walks in 30 s before | Abort at the last moment, wasted trip | Early alert, pet door, HOLD, then drop |
@@ -188,7 +199,7 @@ Full comparison and sources: [docs/COMPARISON.md](docs/COMPARISON.md).
 
 ## AWS: Amazon Rekognition (runtime, opt-in)
 
-The default detector runs in the browser with no account (vendored COCO-SSD). With an AWS account, DropZone+ can instead send each Ring frame to **Amazon Rekognition DetectLabels** on the server:
+The default detector runs in the browser with no account (vendored COCO-SSD). With an AWS account, DropZone can instead send each Ring frame to **Amazon Rekognition DetectLabels** on the server:
 
 ```bash
 npm install                       # pulls the optional @aws-sdk/client-rekognition
@@ -217,7 +228,7 @@ Requirements: Node ≥ 20. There are no runtime dependencies (`@aws-sdk/client-b
 
 ```bash
 git clone https://github.com/saurabh4269/dropzone-plus && cd dropzone-plus
-npm test                 # 46 tests (1 live AWS test skips without DZ_AWS=1): zone logic, veto-only advisory, consent, every replay scenario, change detection,
+npm test                 # 55 tests (1 live AWS test skips without DZ_AWS=1): zone logic, veto-only advisory, consent, every replay scenario, change detection,
                          #   OAuth/PKCE, HMAC webhooks, and LIVE-mode integration against ring-partner-sandbox (if present)
 npm run e2e              # headless Chrome: landing, demo scenarios (needs local Chrome)
 npm run e2e:app          # headless Chrome at 390x844: full PWA journey, onboarding to proof of drop

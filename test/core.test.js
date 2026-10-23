@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { evaluateZone, freshen, auditZone, suggestZone, STATUS } from '../public/core/zone.js';
 import { buildAdvisory, ADVICE } from '../public/core/advisory.js';
 import { createSession, PHASE } from '../public/core/engine.js';
-import { headsUp } from '../public/core/alexa.js';
+import { headsUp, deviceOffers } from '../public/core/alexa.js';
 
 const zone = [[0.4, 0.6], [0.6, 0.6], [0.6, 0.8], [0.4, 0.8]];
 const T = Date.parse('2026-10-23T18:00:00Z');
@@ -126,4 +126,41 @@ test('zone suggestion moves the zone away from a pool until the audit passes', (
   assert.ok(sug.dx < 0, 'moves left, away from the pool');
   assert.ok(auditZone(sug.zone, [pool]).every((f) => f.level === 'ok'));
   assert.equal(suggestZone(sug.zone, [pool]), null, 'already fine -> no suggestion');
+});
+
+test('yard lights and sprinkler refuse without explicit owner consent', () => {
+  const s = createSession({ zone });
+  assert.equal(s.state.lights.turnOn({ ownerConsent: 'yes' }).ok, false);
+  assert.equal(s.state.lights.mode, 'off');
+  assert.equal(s.state.sprinkler.pause({ ownerConsent: 1 }).ok, false);
+  assert.equal(s.state.sprinkler.mode, 'scheduled');
+});
+
+test('device offers: lights only in low light, sprinkler only if it runs inside the drop window', () => {
+  const h = { hasYardLights: true, hasSprinkler: true, lowLight: true };
+  const ids = (o) => o.map((m) => m.prompt.id);
+  assert.deepEqual(ids(deviceOffers({ household: h, sprinklerRunsAt: T + 4 * 60000, now: T, windowEnd: T + 20 * 60000 })), ['lights-on', 'sprinkler-pause']);
+  assert.deepEqual(ids(deviceOffers({ household: { ...h, lowLight: false }, sprinklerRunsAt: T + 60 * 60000, now: T, windowEnd: T + 20 * 60000 })), []);
+  assert.deepEqual(ids(deviceOffers({ household: { lowLight: true }, sprinklerRunsAt: T + 60000, now: T, windowEnd: T + 20 * 60000 })), [], 'no devices, no offers');
+});
+
+test('Alexa asks one question at a time: pet door first, then lights, then sprinkler; each restores after the drop', () => {
+  let t = T;
+  const s = createSession({ zone, now: () => t, household: { hasPetDoor: true, hasYardLights: true, hasSprinkler: true, lowLight: true, sprinklerRunsAt: T + 5 * 60000 } });
+  s.observe(evaluateZone({ detections: [dogIn], zone, observedAt: t, now: t }));
+  s.startDelivery({ etaAt: t + 6 * 60000 });
+  assert.equal(s.state.pendingPrompt.id, 'petdoor-in-only');
+  s.answer('petdoor-in-only', true);
+  assert.equal(s.state.pendingPrompt.id, 'lights-on');
+  s.answer('lights-on', true);
+  assert.equal(s.state.lights.mode, 'on');
+  assert.equal(s.state.pendingPrompt.id, 'sprinkler-pause');
+  s.answer('sprinkler-pause', false);
+  assert.equal(s.state.sprinkler.mode, 'scheduled', 'no means no');
+  assert.equal(s.state.pendingPrompt, null);
+  t += 5 * 60000; s.tick();
+  assert.equal(s.state.sprinkler.mode, 'running', 'declined pause: the run goes ahead');
+  s.recordDrop({ packageBox: [0.48, 0.65, 0.04, 0.045], observedAt: t, source: 'test' });
+  assert.equal(s.state.petDoor.mode, 'normal');
+  assert.equal(s.state.lights.mode, 'off');
 });

@@ -1,4 +1,4 @@
-# Friction log: DropZone+ (Ring track)
+# Friction log: DropZone (Ring track)
 
 These are real pain points we hit while building, each with how we confirmed it. Severity: **High** = blocked or forced a redesign, **Med** = cost real time, **Low** = an annoyance.
 Status labels: **Observed** = we reproduced it ourselves from this build machine. **Docs** = a discrepancy we confirmed by reading the official docs or sample. **Reported** = seen in the hackathon forum and not reproduced by us.
@@ -112,7 +112,7 @@ Machine and date: Linux, Node 22, 23 Oct 2026 (IST).
 - **Expected:** a sandbox OAuth client (`client_id`, `client_secret`, localhost redirect URI) for Playground users.
 - **Actual:** browsers are blocked by CORS, and the OAuth flow needs credentials issued only during partner onboarding. The Playground gives only a bearer token.
 - **Severity:** Medium. The real linking UX can be built but not run.
-- **Workaround:** the PWA talks to the DropZone+ backend. `lib/oauth.js` implements the documented flow (PKCE S256, `state`, scope, code exchange, `PATCH app-integrations`) and is unit-tested against a fake token endpoint. Onboarding offers a Playground-token fallback and a labelled demo home.
+- **Workaround:** the PWA talks to the DropZone backend. `lib/oauth.js` implements the documented flow (PKCE S256, `state`, scope, code exchange, `PATCH app-integrations`) and is unit-tested against a fake token endpoint. Onboarding offers a Playground-token fallback and a labelled demo home.
 - **Suggestion:** give Playground users a sandbox OAuth client with a localhost redirect URI.
 
 ### 13. The OAuth docs disagree on the scope value (Docs, Low)
@@ -132,6 +132,15 @@ Machine and date: Linux, Node 22, 23 Oct 2026 (IST).
 - **Severity:** Low. Parsing code has to handle both.
 - **Workaround:** we only check the HTTP status (`res.ok`) and don't depend on the body.
 - **Suggestion:** document a single shape (JSON:API, like the rest of the API).
+
+### 15. Real Playground run: snapshot 403, WHEP 201 but no frames, empty history until an event (Observed, High, Playground)
+- **Task:** run our end to end script (`npm run playground`) against the real Ring Developer Playground, 23 Oct 2026 23:31 IST.
+- **Steps:** created a Playground token (valid about 30 minutes), ran the script, pressed **Package** in Playground step 3 to create an event.
+- **Expected:** a snapshot image, live video over WHEP, and history available from the start.
+- **Actual:** 7 PASS · 1 FAIL · 1 INFO. users/me, devices (1 "Playground Device"), status, capabilities, history, PWA Check now and the carrier advisory passed. Event history was empty until we pressed Package, then had 1 event. The snapshot download returned **403**. The WHEP POST returned **201 with an SDP answer, but no video frames arrived**; the Playground's own Live Stream modal also stayed black on this machine.
+- **Severity:** High. No camera image reached the app, so the verdict was UNKNOWN.
+- **Workaround:** UNKNOWN is a first class answer, so the app behaved correctly; vision was demonstrated on replay frames, uploaded photos and the mock in ring-partner-sandbox. Our checks look for real video frames, not the WHEP status code.
+- **Suggestion:** return an error body that says why media is unavailable (403 on snapshot, or a WHEP failure instead of a silent 201), and seed a few history events for new tokens.
 
 ## Feature requests
 

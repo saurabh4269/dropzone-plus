@@ -1,7 +1,7 @@
 // Carrier-facing advisory. Veto-only by construction:
 // the only thing it can ever say is HOLD (please wait) or NO_ADVISORY (we have nothing to add).
 // It never says "safe", "clear to land" or anything a carrier could treat as authorisation.
-// If DropZone+ is down, slow or unsure, the carrier sees NO_ADVISORY and flies exactly as it does today.
+// If DropZone is down, slow or unsure, the carrier sees NO_ADVISORY and flies exactly as it does today.
 
 import { STATUS, freshen } from './zone.js';
 

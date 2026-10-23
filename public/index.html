@@ -7,8 +7,8 @@
     if (/[?&](scenario|seek|photo|replay|autoplay|speed)(=|&|$)/.test(location.search)) location.replace('./demo.html' + location.search + location.hash);
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DropZone+ · Your Ring camera checks the drone drop zone before the drone arrives</title>
-  <meta name="description" content="DropZone+ uses your Ring camera to check the drone drop zone before the drone arrives. Alexa tells the household, a pet door can help with your yes, and the carrier gets a veto-only HOLD." />
+  <title>DropZone · Your Ring camera checks the drone drop zone before the drone arrives</title>
+  <meta name="description" content="DropZone uses your Ring camera to check the drone drop zone before the drone arrives. Alexa tells you what is in the way, your pet door, yard lights and sprinkler help clear the spot with your yes, and the carrier gets a HOLD signal before landing." />
   <meta name="theme-color" content="#0b0e13" />
   <link rel="stylesheet" href="./landing.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='none' stroke='%231aa3ff' stroke-width='10'/><circle cx='50' cy='50' r='12' fill='%231aa3ff'/></svg>" />
@@ -35,7 +35,7 @@
         <div>
           <span class="eyebrow">Ring × drone delivery</span>
           <h1>Your Ring camera checks the drone drop zone before the drone arrives.</h1>
-          <p class="lede">Ring sees the zone. Alexa tells the household. A smart pet door can fix the problem, with your yes. The drone carrier gets a HOLD signal, and never video, never a “safe to land”.</p>
+          <p class="lede">Amazon wants Prime Air to deliver <a href="https://www.aboutamazon.com/news/transportation/amazon-drone-prime-air-expanded-delivery-faa-approval" rel="noopener">500 million packages a year</a> by the end of the decade. Before each drone lands, Ring checks the spot and Alexa tells you what is in the way. With your yes, the pet door lets the dog in, yard lights come on at dusk and the sprinkler waits (simulated). The carrier gets a HOLD signal before landing if the spot is not clear.</p>
           <div class="ctas">
             <a class="btn primary" href="./app/">Open the app</a>
             <a class="btn" href="./sim/">3D simulation →</a>
@@ -43,7 +43,7 @@
           </div>
           <p class="fine">The demo runs entirely in your browser. No login, no token.</p>
         </div>
-        <div class="viz" role="img" aria-label="Illustration: a dog is inside the drawn drop zone next to a pool; DropZone+ says NOT CLEAR and the carrier gets HOLD.">
+        <div class="viz" role="img" aria-label="Illustration: a dog is inside the drawn drop zone next to a pool; DropZone says NOT CLEAR and the carrier gets HOLD.">
           <span class="tag">ILLUSTRATION · SIMULATED</span>
           <div class="pool"></div>
           <div class="zone"></div>
@@ -67,7 +67,7 @@
           <li>Drop points are chosen remotely from maps, and the drone sees the spot for a few seconds from about 13 ft up.
             <span class="src"><a href="https://www.primeair.amazon/technology" rel="noopener">Prime Air technology</a></span></li>
         </ul>
-        <p class="callout">A Ring camera has watched that same patch of ground for months. It knows the dog is out right now, that a patio umbrella appeared yesterday, and where the pool is. DropZone+ uses that knowledge <b>before</b> the drone arrives, while the household can still do something about it.</p>
+        <p class="callout">A Ring camera has watched that same patch of ground for months. It knows the dog is out right now, that a patio umbrella appeared yesterday, and where the pool is. DropZone uses that knowledge <b>before</b> the drone arrives, while the household can still do something about it.</p>
       </div>
     </section>
 
@@ -79,7 +79,7 @@
           <div class="card"><span class="n">1</span><h3>Ring sees the zone</h3><p>Ring frames are checked against the zone you drew. The answer is CLEAR, NOT CLEAR or UNKNOWN, timestamped, and expires after 90 seconds.</p></div>
           <div class="card"><span class="n">2</span><h3>Alexa tells the household <span class="pill sim">simulated</span></h3><p>A simulated Alexa+ add-on: “Your drone delivery is about 8 minutes away, and there's a dog in the drop zone. Want me to set the pet door to come-in-only?”</p></div>
           <div class="card"><span class="n">3</span><h3>Devices help, with your yes <span class="pill sim">simulated</span></h3><p>Only after the owner says yes does the simulated pet door go come-in-only. It restores itself after the drone has left.</p></div>
-          <div class="card"><span class="n">4</span><h3>Carrier gets one bit</h3><p>At T−60 s the carrier sees <b>HOLD</b> (with a reason code) or <b>NO_ADVISORY</b>. Never video, never “safe to land”. After the drop, a Ring frame becomes a proof-of-drop receipt.</p></div>
+          <div class="card"><span class="n">4</span><h3>Carrier gets one bit</h3><p>At T−60 s the carrier sees <b>HOLD</b> (with a reason code) or <b>NO_ADVISORY</b>. The carrier never receives video. After the drop, a Ring frame becomes a proof-of-drop receipt.</p></div>
         </div>
       </div>
     </section>
@@ -87,9 +87,9 @@
     <section class="s" id="safety">
       <div class="wrap">
         <h2>Safety and privacy by design</h2>
-        <p class="sub">Designed against the Ring Program Requirements. If DropZone+ is down, slow or unsure, the carrier does exactly what it does today.</p>
+        <p class="sub">Designed against the Ring Program Requirements. If DropZone is down, slow or unsure, the carrier does exactly what it does today.</p>
         <div class="grid g3">
-          <div class="card"><h3>Veto-only</h3><p>The carrier endpoint can only return HOLD or NO_ADVISORY, and <code>authorises_drop</code> is always false. Holds are capped at 3. The aircraft's own detect-and-avoid stays authoritative.</p></div>
+          <div class="card"><h3>Advisory only</h3><p>The carrier endpoint can only return HOLD or NO_ADVISORY, and <code>authorises_drop</code> is always false. Holds are capped at 3. The aircraft's own detect-and-avoid stays authoritative.</p></div>
           <div class="card"><h3>UNKNOWN is first-class</h3><p>Offline camera, encrypted feed, an error, a stale frame or no zone: the answer is UNKNOWN, never CLEAR.</p></div>
           <div class="card"><h3>Labels only</h3><p>“person”, “dog”, “vehicle”. No face matching, no tracking across locations, no plates. The carrier gets reason codes, never images.</p></div>
           <div class="card"><h3>Consent before devices act</h3><p>The pet door refuses to change without the owner's explicit yes, and restores itself after the drop or after 15 minutes.</p></div>
@@ -138,13 +138,16 @@
           <thead><tr><th>Piece</th><th>Status</th></tr></thead>
           <tbody>
             <tr><td>Zone logic: CLEAR / NOT CLEAR / UNKNOWN, expiry, zone audit</td><td><span class="pill real">Real</span></td></tr>
-            <tr><td>Veto-only advisory API (<code>GET /api/v1/advisory</code>)</td><td><span class="pill real">Real</span></td></tr>
+            <tr><td>Advisory API (<code>GET /api/v1/advisory</code>)</td><td><span class="pill real">Real</span></td></tr>
             <tr><td>Object detection (TensorFlow.js COCO-SSD, in the browser)</td><td><span class="pill real">Real</span></td></tr>
             <tr><td>Ring Partner API: discovery, history, snapshots, live view</td><td><span class="pill real">Real</span> in live mode</td></tr>
             <tr><td>Ring webhooks: HMAC verification is real, events are simulated</td><td><span class="pill sim">Simulated events</span></td></tr>
             <tr><td>Replay yard, actors and scripted detections</td><td><span class="pill sim">Simulated</span></td></tr>
             <tr><td>Alexa (Alexa+ add-on utterances, also exposed via MCP)</td><td><span class="pill sim">Simulated</span></td></tr>
             <tr><td>Smart pet door</td><td><span class="pill sim">Simulated</span></td></tr>
+            <tr><td>Yard lights at dusk (on with your yes, restored after the drop)</td><td><span class="pill sim">Simulated</span></td></tr>
+            <tr><td>Sprinkler pause for the drop window (with your yes, schedule restored)</td><td><span class="pill sim">Simulated</span></td></tr>
+            <tr><td>Delivery partners (Amazon Prime Air, Wing, Zipline, Flytrex, Manna): preview, no live integration, not affiliated</td><td><span class="pill sim">Simulated linking</span></td></tr>
             <tr><td>Drone carrier consuming the advisory</td><td><span class="pill sim">Simulated</span></td></tr>
           </tbody>
         </table>
@@ -181,7 +184,7 @@
 
   <footer>
     <div class="wrap">
-      <span>DropZone+ · MIT licence · Built for the Amazon Developer Hackathon 2026, Ring track.</span>
+      <span>DropZone · MIT licence · Built for the Amazon Developer Hackathon 2026, Ring track.</span>
       <span>Not affiliated with, endorsed by, or connected to any drone operator, or to Ring or Amazon.</span>
     </div>
   </footer>
