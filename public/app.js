@@ -71,8 +71,8 @@ function onEvent(type, e) {
   } else if (type === 'receipt') {
     renderReceipt(e.receipt);
     text = `Proof of drop: ${e.receipt.placement}${e.receipt.hazard ? ' (' + e.receipt.hazard + ')' : ''}`;
-  } else if (type === 'ring') {
-    text = e.text;
+  } else if (e.text) {
+    text = e.text; // 'ring', 'vision', 'voice' notes
   }
   if (!text) return;
   const li = document.createElement('li');
@@ -382,6 +382,25 @@ function wire() {
   for (const id of ['speakChk', 'speakChk2']) $(id).onchange = (e) => { app.speak = e.target.checked; if (!app.speak) speechSynthesis?.cancel(); };
   $('yesBtn').onclick = () => app.session.answer($('promptBox').dataset.id, true);
   $('noBtn').onclick = () => app.session.answer($('promptBox').dataset.id, false);
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR) {
+    $('micBtn').classList.remove('hidden');
+    $('micBtn').onclick = () => {
+      const rec = new SR();
+      rec.lang = 'en-US';
+      rec.interimResults = false;
+      $('micBtn').textContent = '🎙 Listening…';
+      rec.onresult = (e) => {
+        const heard = e.results[0][0].transcript.toLowerCase();
+        onEvent('voice', { text: `Heard: “${heard}”` });
+        if (/\b(yes|yeah|yep|sure|ok|okay|do it|please)\b/.test(heard)) app.session.answer($('promptBox').dataset.id, true);
+        else if (/\b(no|nope|don't|do not|leave it)\b/.test(heard)) app.session.answer($('promptBox').dataset.id, false);
+      };
+      rec.onend = () => ($('micBtn').textContent = '🎤 Say it');
+      rec.onerror = () => ($('micBtn').textContent = '🎤 Say it');
+      rec.start();
+    };
+  }
   $('editZoneBtn').onclick = () => toggleEdit('zone');
   $('hazardBtn').onclick = () => toggleEdit('hazard');
   cv.onclick = (ev) => { if (app.edit) app.editPts = [...app.editPts, canvasPoint(ev)]; };
@@ -393,7 +412,7 @@ function wire() {
     const img = await loadImg(URL.createObjectURL(f));
     photoSession();
     const v = await analyseImage(img, { label: 'Your photo · real detection', observedAt: Date.now(), source: 'upload' });
-    onEvent('ring', { text: `Photo analysed in-browser: ${v.objects.length} object(s) found → ${v.status}` });
+    onEvent('vision', { text: `Photo analysed in-browser: ${v.objects.length} object(s) found → ${v.status}` });
     e.target.value = '';
   };
 
@@ -430,8 +449,8 @@ async function analysePhotoUrl(url) {
     const img = await loadImg(url);
     photoSession();
     const v = await analyseImage(img, { label: 'Photo · real detection', observedAt: Date.now(), source: 'upload' });
-    onEvent('ring', { text: `Photo analysed in-browser: ${v.objects.length} object(s) → ${v.status}` });
-  } catch (e) { onEvent('ring', { text: 'Photo failed: ' + e.message }); }
+    onEvent('vision', { text: `Photo analysed in-browser: ${v.objects.length} object(s) → ${v.status}` });
+  } catch (e) { onEvent('vision', { text: 'Photo failed: ' + e.message }); }
 }
 
 async function discover() {
