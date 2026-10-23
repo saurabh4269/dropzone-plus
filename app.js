@@ -266,7 +266,7 @@ function draw() {
     ctx.fillStyle = '#3ee6ff'; ctx.fillRect(rb[0] * W - 4, (rb[1] + rb[3]) * H + 6, tw + 10, 22); ctx.fillStyle = '#04161c'; ctx.fillText(t, rb[0] * W + 1, (rb[1] + rb[3]) * H + 22); ctx.restore();
   }
   if (app.edit) drawPolygon(ctx, app.editPts, { stroke: '#fff', dash: [2, 4], width: 2 });
-  const label = app.view === 'scene' ? 'Backyard cam · simulated' : app.view === 'video' ? 'Ring live view (WHEP)' : app.imageLabel;
+  const label = app.view === 'scene' ? 'Backyard cam' : app.view === 'video' ? 'Ring live view (WHEP)' : app.imageLabel;
   drawCameraChrome(ctx, { label, time: fmtTime(now()), simulated: app.view === 'scene' });
 }
 
@@ -295,7 +295,7 @@ function renderCards() {
   $('adviceText').className = adv.advice;
   $('holdsText').textContent = `${s.holdsIssued} / 3`;
   $('advJson').textContent = JSON.stringify(adv, null, 2);
-  $('clockText').textContent = app.mode === 'replay' && app.view === 'scene' ? `simulated clock ${fmtTime(now())} · ${app.speed}×` : fmtTime(now());
+  $('clockText').textContent = app.mode === 'replay' && app.view === 'scene' ? `${fmtTime(now())} · ${app.speed}×` : fmtTime(now());
 }
 
 function renderAudit() {

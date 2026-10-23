@@ -19,8 +19,7 @@
     </a>
     <div class="badges">
       <a class="badge" href="./app/" style="color:var(--ring);text-decoration:none;border:1px solid var(--ring)">Get the app →</a>
-      <span id="modeBadge" class="badge sim">REPLAY · simulated</span>
-      <span class="badge policy" title="Ring Program Requirements 2.8: advisory only. Can delay, never authorises.">Advisory · hold only</span>
+      <span id="modeBadge" class="badge sim">Demo</span>
     </div>
   </header>
 
@@ -42,10 +41,9 @@
     <button id="snapBtn" class="primary">📸 Check zone now (Ring snapshot)</button>
     <button id="liveBtn">🎥 Live view (WHEP)</button>
     <button id="frameBtn" disabled>Analyse live frame</button>
-    <button id="orderBtn">🚁 Simulate drone order (ETA 3 min)</button>
+    <button id="orderBtn">🚁 Order by drone (ETA 3 min)</button>
     <button id="proofBtn">📦 Proof-of-drop snapshot</button>
     <label class="chk"><input type="checkbox" id="speakChk2" /> 🔊 Speak</label>
-    <p class="blurb">LIVE: frames come from the Ring Partner API (Ring Developer Playground). Carrier, Alexa, pet door, yard lights and sprinkler remain simulated.</p>
   </section>
 
   <ol class="steps">
@@ -80,7 +78,7 @@
 
     <aside class="side">
       <section class="panel echo">
-        <div class="panel-h"><h2>Echo Show card <small>simulated Alexa+ add-on</small></h2></div>
+        <div class="panel-h"><h2>Echo Show card</h2></div>
         <div class="show">
           <div id="statusBig" class="status unknown" role="status" aria-live="polite">UNKNOWN</div>
           <div class="eta"><span id="etaText">No delivery inbound</span></div>
@@ -94,7 +92,7 @@
       </section>
 
       <section class="panel carrier">
-        <div class="panel-h"><h2>Carrier view <small>simulated carrier · any operator</small></h2></div>
+        <div class="panel-h"><h2>Carrier view</h2></div>
         <div class="kv"><span>Phase</span><b id="phaseText">idle</b></div>
         <div class="kv"><span>Advisory</span><b id="adviceText">NO_ADVISORY</b></div>
         <div class="kv"><span>Holds requested</span><b id="holdsText">0 / 3</b></div>
@@ -103,17 +101,17 @@
       </section>
 
       <section class="panel door">
-        <div class="panel-h"><h2>Pet door <small>simulated smart pet door</small></h2></div>
+        <div class="panel-h"><h2>Pet door</h2></div>
         <div class="kv"><span>Mode</span><b id="doorText">normal</b></div>
         <p class="fine">Changes only after the owner says yes. Restores itself after the drop or after 15 min.</p>
       </section>
       <section class="panel door">
-        <div class="panel-h"><h2>Yard lights <small>simulated smart lights</small></h2></div>
+        <div class="panel-h"><h2>Yard lights</h2></div>
         <div class="kv"><span>Mode</span><b id="lightsText">off</b></div>
         <p class="fine">Offered at dusk so the camera can read the zone. On only after the owner says yes; off again after the drop or 15 min.</p>
       </section>
       <section class="panel door">
-        <div class="panel-h"><h2>Sprinkler <small>simulated irrigation controller</small></h2></div>
+        <div class="panel-h"><h2>Sprinkler</h2></div>
         <div class="kv"><span>Mode</span><b id="sprinklerText">scheduled</b></div>
         <p class="fine">Offered when a run falls in the drop window. Paused only after the owner says yes; schedule restores after the drop or 15 min.</p>
       </section>
@@ -137,8 +135,7 @@
   </main>
 
   <footer>
-    <p><b>What's real:</b> the zone logic, the hold-only advisory, the timing/expiry rules, in-browser object detection on photos you upload or Ring frames, and (LIVE mode) calls to the Ring Partner API.
-      <b>What's simulated:</b> the replay yard and its scripted detections, the carrier, the Alexa+ add-on, the pet door, the yard lights, the sprinkler. Nothing here is affiliated with any drone operator.</p>
+    <p>Demo home: camera replay, devices and carrier are not live.</p>
     <p><a href="https://github.com/saurabh4269/dropzone-plus">Source on GitHub (MIT)</a></p>
   </footer>
 
