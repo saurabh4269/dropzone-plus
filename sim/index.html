@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DropZone+ · SIMULATED 3D SCENE</title>
+<link rel="stylesheet" href="./sim.css">
+</head>
+<body>
+<header>
+  <div class="brand"><a href="../">DropZone+</a> <span class="sim-badge">SIMULATED 3D SCENE</span></div>
+  <div class="controls">
+    <select id="scenario" aria-label="Scenario"></select>
+    <button id="play">▶ Play</button>
+    <button data-speed="1">1×</button><button data-speed="4">4×</button>
+    <input id="scrub" type="range" min="0" max="190" step="0.1" value="0" aria-label="Timeline">
+    <span id="clock"></span>
+  </div>
+</header>
+<main>
+  <section class="views">
+    <figure class="view ring"><canvas id="ringGl" width="960" height="540"></canvas><canvas id="ringOv" class="ov" width="960" height="540"></canvas>
+      <figcaption>(a) Fixed Ring camera. Its detections feed the real <code>evaluateZone</code> every simulated second.</figcaption></figure>
+    <figure class="view drone"><canvas id="droneGl" width="540" height="540"></canvas><canvas id="droneOv" class="ov" width="540" height="540"></canvas>
+      <figcaption>(b) Drone down-looking camera (a drone-side check in the style of OpenLander / MDPI Drones 8(1):21).</figcaption></figure>
+    <figure class="view over"><canvas id="overGl" width="960" height="540"></canvas><canvas id="overOv" class="ov" width="960" height="540"></canvas></figure>
+    <aside class="panel">
+      <div class="row"><span>Ring zone verdict</span><b id="verdict" class="verdict">…</b></div>
+      <div class="small" id="reasons"></div>
+      <div class="row"><span>Advisory to carrier</span><b id="advice"></b></div>
+      <div class="row"><span>Holds used</span><b id="holds"></b></div>
+      <div class="row"><span>Drone</span><b id="phase"></b></div>
+      <div class="row"><span>Altitude</span><b id="alt"></b></div>
+      <ol id="events"></ol>
+      <div id="receipt" class="receipt" hidden>
+        <div class="row"><span>Proof of drop: real <code>findNewObject</code> on 160×90 Ring frames</span></div>
+        <div class="thumbs"><figure><canvas id="before" width="160" height="90"></canvas><figcaption>before</figcaption></figure><figure><canvas id="after" width="160" height="90"></canvas><figcaption>after</figcaption></figure></div>
+        <b id="receiptText"></b>
+      </div>
+    </aside>
+  </section>
+  <section class="compare">
+    <h2>Drone-side vision vs a fixed home camera: complementary, not rivals</h2>
+    <table>
+      <thead><tr><th></th><th>Drone-side vision (OpenLander, MDPI Drones 8(1):21)</th><th>Fixed home camera (DropZone+)</th></tr></thead>
+      <tbody>
+        <tr><td>When it sees the zone</td><td>Only on final approach, a few seconds from ~13 ft</td><td>Continuously, minutes before arrival</td></tr>
+        <tr><td>Dog walks in 30 s before (scenario 1)</td><td>Sees it at the last moment → abort, wasted trip</td><td>Sees it early → Alexa asks, pet door, HOLD, then drop</td></tr>
+        <tr><td>Pool just outside the drop point (scenario 2)</td><td>Outside its FOV at 13 ft; can't know</td><td>Owner marked it once; audit + receipt "near the pool"</td></tr>
+        <tr><td>Stale survey: umbrella added after mapping (scenario 3)</td><td>Sees it on arrival → abort</td><td>Sees it now; household can move it before the drone launches</td></tr>
+        <tr><td>Last-second events (final ~2 s)</td><td><b>Wins</b>: it is looking right then</td><td>Advisory may already be sent</td></tr>
+        <tr><td>Areas the home camera can't see / homes without cameras</td><td><b>Wins</b>: works anywhere</td><td>Needs a camera covering the zone</td></tr>
+        <tr><td>Authority</td><td>Authoritative (aircraft's own sensors)</td><td>Veto-only: HOLD or NO_ADVISORY, never "safe"</td></tr>
+      </tbody>
+    </table>
+    <p>Full write-up with sources: <a href="https://github.com/saurabh4269/dropzone-plus/blob/main/docs/COMPARISON.md">docs/COMPARISON.md</a>. Everything on this page is simulated: scripted actors, a ground-truth detector (projected 3D boxes, no occlusion, no misses) and a simulated carrier. The zone logic, advisory and proof-of-drop are the real modules from <code>public/core/</code>.</p>
+  </section>
+</main>
+<script type="module" src="./sim.js"></script>
+</body>
+</html>
