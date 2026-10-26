@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy · DropZone</title>
+  <meta name="description" content="How DropZone handles camera frames, zones and settings: on your device, with labels only and no video sent to carriers." />
+  <meta name="theme-color" content="#000000" />
+  <meta name="color-scheme" content="dark" />
+  <link rel="icon" href="./app/icons/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./site.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="./" aria-label="DropZone home"><span class="mark" aria-hidden="true"></span><span>DropZone</span></a>
+    <a class="btn ghost sm keep" href="./">Back to home</a>
+  </nav>
+  <main id="main" class="doc">
+    <div class="wrap">
+      <h1>Privacy</h1>
+      <p class="upd">Last updated 26 October 2026</p>
+      <p>DropZone is an open source project. This page explains what the website, the app and the optional local server do with your data. The short version: your yard data stays on your device, and drone carriers only ever receive a hold signal with a reason code.</p>
+      <h2>What stays in your browser</h2>
+      <ul>
+        <li>Drop zones, zone names and descriptions, hazards you mark, delivery history, partner choices and settings are stored in this browser's local storage.</li>
+        <li>Camera frames are analysed in your browser with TensorFlow.js. They are not uploaded.</li>
+        <li>You can remove everything at any time from Settings, then Delete all my data, in the app.</li>
+      </ul>
+      <h2>What the optional server does</h2>
+      <ul>
+        <li>If you run DropZone locally with a Ring token, the server calls the Ring Partner API on your behalf. Your token is never sent to the browser.</li>
+        <li>The server keeps only the latest zone verdict, in memory. It does not store frames or video.</li>
+        <li>If you turn on Amazon Rekognition, frames are sent to your own AWS account for labelling. This is off by default.</li>
+      </ul>
+      <h2>What a drone carrier receives</h2>
+      <p>HOLD with reason codes such as PERSON_IN_ZONE, or NO_ADVISORY, plus timestamps. Never images, video, faces, plates or identities. In this project the carrier is simulated.</p>
+      <h2>This website</h2>
+      <p>The site is hosted on GitHub Pages. It sets no cookies and runs no analytics. Fonts are served from this site. The app loads the COCO SSD detection model from jsDelivr when detection runs. GitHub may keep standard server logs under its own privacy statement.</p>
+      <h2>Contact</h2>
+      <p>Questions or concerns: open an issue on <a href="https://github.com/saurabh4269/dropzone-plus/issues" rel="noopener">GitHub</a>.</p>
+    </div>
+  </main>
+  <footer class="foot">
+    <div class="wrap">
+      <div class="base" style="margin-top:0;padding-top:0;border-top:0"><span>© 2026 DropZone · <a href="./privacy.html">Privacy</a> · <a href="./terms.html">Terms</a></span><span>This site sets no cookies.</span></div>
+    </div>
+  </footer>
+</body>
+</html>
